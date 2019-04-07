@@ -3,11 +3,11 @@
 #ifndef SRC_SCANNER_SCANNER_H_
 #define SRC_SCANNER_SCANNER_H_
 
-#include <istream>
-#include <stdexcept>
 #include <cctype>
-#include <string>
+#include <istream>
 #include <map>
+#include <stdexcept>
+#include <string>
 #include "Token.h"
 
 class Scanner {
@@ -23,6 +23,7 @@ class Scanner {
     int currentLine = 0;
   } currentState;
   std::map<std::string, Token::Type> keywordsTokens;
+  std::map<std::string, Token::Type> onlySinglePunct;
 
   char getNextChar();
   void moveForward();

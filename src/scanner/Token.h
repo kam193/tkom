@@ -9,10 +9,20 @@ class Token {
  public:
   enum class Type {
     space,  // For any whitespace, value is int and means number of white chars
+    openBracket,  // (
+    closeBracket,  // )
+    openSquareBracket,  // [
+    closeSquareBracket,  // ]
+    quotationMark,  // "
+    colon,  // :
+    comma,  // ,
+    multipOp,  // *
+    divOp,  // /
+    expOp,  // ^
     identifier,
     eof,
     nl,
-    number,
+    integerNumber,
     forT,
     NaT  // not a token
   };

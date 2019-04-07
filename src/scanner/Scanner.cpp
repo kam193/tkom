@@ -5,6 +5,17 @@
 Scanner::Scanner(std::istream &in) : in(in) {
   keywordsTokens.insert(std::make_pair("for", Token::Type::forT));
   // rest of keywords
+
+  onlySinglePunct.insert(std::make_pair("(", Token::Type::openBracket));
+  onlySinglePunct.insert(std::make_pair(")", Token::Type::closeBracket));
+  onlySinglePunct.insert(std::make_pair("[", Token::Type::openSquareBracket));
+  onlySinglePunct.insert(std::make_pair("]", Token::Type::closeSquareBracket));
+  onlySinglePunct.insert(std::make_pair("\"", Token::Type::quotationMark));
+  onlySinglePunct.insert(std::make_pair(":", Token::Type::colon));
+  onlySinglePunct.insert(std::make_pair(",", Token::Type::comma));
+  onlySinglePunct.insert(std::make_pair("*", Token::Type::multipOp));
+  onlySinglePunct.insert(std::make_pair("/", Token::Type::divOp));
+  onlySinglePunct.insert(std::make_pair("^", Token::Type::expOp));
 }
 
 Token Scanner::getNextToken() {
@@ -76,4 +87,26 @@ Token Scanner::parseAlpha() {
     return Token(findedKeyword->second);
 
   return Token(identifer);
+}
+
+Token Scanner::parseDigit() {
+  // TODO: other types of numbers
+
+  std::string tmp = "";
+  char c;
+  while (isdigit(c = getNextChar())) {
+    tmp += c;
+    moveForward();
+  }
+  return Token(Token::Type::integerNumber, std::stoi(tmp));
+}
+
+Token Scanner::parsePunct() {
+  std::string tmp = "" + getNextChar();
+
+  auto findedToken = onlySinglePunct.find(tmp);
+  if (findedToken != onlySinglePunct.end()) return Token(findedToken->second);
+
+  //   char c;
+  //   while (ispunct(c = get))
 }
