@@ -110,6 +110,16 @@ Token Scanner::parseDigit() {
     tmp += c;
     moveForward();
   }
+  if (c == '.') {
+    tmp += c;
+    moveForward();
+    while (isdigit(c = getNextChar())) {
+      tmp += c;
+      moveForward();
+    }
+    double t = std::stod(tmp);
+    return Token(std::stod(tmp));
+  }
   return Token(Token::Type::integerNumber, std::stoi(tmp));
 }
 
@@ -121,17 +131,17 @@ Token Scanner::parsePunct() {
   auto findedToken = onlySinglePunct.find(tmp);
   if (findedToken != onlySinglePunct.end()) return Token(findedToken->second);
 
-  char c;
-  if (!ispunct(c = getNextChar())) return Token(Token::Type::NaT, tmp);
+  if (getNextChar() == '=') {
+    tmp += '=';
+    moveForward();
+  }
 
-  tmp += c;
   findedToken = multiCharOperators.find(tmp);
   if (findedToken != multiCharOperators.end()) {
-    moveForward();
     return Token(findedToken->second);
   }
 
-  return Token(Token::Type::NaT, tmp.substr(0, 1));
+  return Token(Token::Type::NaT, tmp);
 }
 
 Token Scanner::parseQuotationMark() {
@@ -144,8 +154,7 @@ Token Scanner::parseQuotationMark() {
     moveForward();
   }
 
-  if (c != '"')
-    return Token(Token::Type::NaT, tmp);
+  if (c != '"') return Token(Token::Type::NaT, tmp);
 
   moveForward();
   return Token(Token::Type::stringT, tmp);

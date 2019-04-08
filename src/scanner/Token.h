@@ -35,22 +35,30 @@ class Token {
     eof,
     nl,
     integerNumber,
+    realNumber,
     forT
   };
 
   Token() {}
-  Token(Type type, int value) : type(type), intValue(value) {}
+  Token(Type type, std::int64_t value)
+      : type(type), numValue({.integer = value}) {}
   explicit Token(Type type) : type(type) {}
   explicit Token(std::string str) : type(Type::identifier), strValue(str) {}
+  explicit Token(double value)
+      : type(Type::realNumber), numValue({.real = value}) {}
   Token(Type type, std::string str) : type(type), strValue(str) {}
 
-  int getInteger() { return intValue; }
+  std::int64_t getInteger() { return numValue.integer; }
+  double getReal() { return numValue.real; }
   std::string getString() { return strValue; }
   Type getType() { return type; }
 
  private:
   Type type = Type::NaT;
-  int intValue = 0;
+  union {
+    std::int64_t integer;
+    double real;
+  } numValue = {.integer = 0};
   std::string strValue = "";
 };
 
