@@ -30,6 +30,9 @@ class Scanner {
   void moveForward();
   void skipWhitespaces();
   bool isValidIdentiferChar(char c);
+  bool isValidRealNumber(const std::string &value, int pointerPosition);
+  bool isValidIntegerNumber(const std::string &value);
+  bool isValidHexNumber(const std::string);
 
   Token parseNewLine();
   Token parseSpace();

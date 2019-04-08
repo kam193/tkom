@@ -37,8 +37,8 @@ Token Scanner::getNextToken() {
     if (nextChar == EOF) return Token(Token::Type::eof);
     if (nextChar == '\n') return parseNewLine();
     if (isspace(nextChar)) return parseSpace();
-    if (isValidIdentiferChar(nextChar)) return parseAlpha();
     if (isdigit(nextChar)) return parseDigit();
+    if (isValidIdentiferChar(nextChar)) return parseAlpha();
     if (nextChar == '"') return parseQuotationMark();
     if (ispunct(nextChar)) return parsePunct();
     return Token(Token::Type::NaT);
@@ -65,7 +65,7 @@ void Scanner::skipWhitespaces() {
   while ((c = getNextChar()) != '\n' && isspace(c)) moveForward();
 }
 
-bool Scanner::isValidIdentiferChar(char c) { return isalpha(c) || c == '_'; }
+bool Scanner::isValidIdentiferChar(char c) { return isalnum(c) || c == '_'; }
 
 Token Scanner::parseNewLine() {
   currentState.newLine = true;
@@ -106,20 +106,28 @@ Token Scanner::parseDigit() {
 
   std::string tmp = "";
   char c;
-  while (isdigit(c = getNextChar())) {
+  while (isalnum(c = getNextChar())) {
     tmp += c;
     moveForward();
   }
   if (c == '.') {
+    int pointerPosition = tmp.size();
     tmp += c;
     moveForward();
-    while (isdigit(c = getNextChar())) {
+    while (isalnum(c = getNextChar())) {
       tmp += c;
       moveForward();
     }
-    double t = std::stod(tmp);
+    // is valid realnumber
     return Token(std::stod(tmp));
   }
+  if (tmp.size() > 2 && tmp.substr(0, 2) == "0x") {
+    // is valid hex
+    double t = std::stoll(tmp.substr(2, tmp.size()), 0, 16);
+    return Token(Token::Type::integerNumber,
+                 std::stoll(tmp.substr(2, tmp.size()), 0, 16));
+  }
+  // is valid Int
   return Token(Token::Type::integerNumber, std::stoi(tmp));
 }
 

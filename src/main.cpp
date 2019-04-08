@@ -5,7 +5,7 @@
 #include "scanner/Scanner.h"
 
 int main() {
-  std::stringstream sss("   its a for  112  token ?? += \"aaaa\" \n 123abc 1.2  sss ^ ^++== \"blaaad  aa");
+  std::stringstream sss("   its a for 0xa 0 112  token ?? += \"aaaa\" \n 123abc 1.2  sss ^ ^++== \"blaaad  aa");
 
   Scanner scan(sss);
 
