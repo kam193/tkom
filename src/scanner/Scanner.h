@@ -24,6 +24,7 @@ class Scanner {
   } currentState;
   std::map<std::string, Token::Type> keywordsTokens;
   std::map<std::string, Token::Type> onlySinglePunct;
+  std::map<std::string, Token::Type> multiCharOperators;
 
   char getNextChar();
   void moveForward();
@@ -35,6 +36,7 @@ class Scanner {
   Token parseAlpha();
   Token parseDigit();
   Token parsePunct();
+  Token parseQuotationMark();
 };
 
 #endif  // SRC_SCANNER_SCANNER_H_

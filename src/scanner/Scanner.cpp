@@ -10,12 +10,23 @@ Scanner::Scanner(std::istream &in) : in(in) {
   onlySinglePunct.insert(std::make_pair(")", Token::Type::closeBracket));
   onlySinglePunct.insert(std::make_pair("[", Token::Type::openSquareBracket));
   onlySinglePunct.insert(std::make_pair("]", Token::Type::closeSquareBracket));
-  onlySinglePunct.insert(std::make_pair("\"", Token::Type::quotationMark));
   onlySinglePunct.insert(std::make_pair(":", Token::Type::colon));
   onlySinglePunct.insert(std::make_pair(",", Token::Type::comma));
   onlySinglePunct.insert(std::make_pair("*", Token::Type::multipOp));
   onlySinglePunct.insert(std::make_pair("/", Token::Type::divOp));
   onlySinglePunct.insert(std::make_pair("^", Token::Type::expOp));
+
+  multiCharOperators.insert(std::make_pair("=", Token::Type::assign));
+  multiCharOperators.insert(std::make_pair("+=", Token::Type::addAssign));
+  multiCharOperators.insert(std::make_pair("-=", Token::Type::subAssign));
+  multiCharOperators.insert(std::make_pair("+", Token::Type::add));
+  multiCharOperators.insert(std::make_pair("-", Token::Type::sub));
+  multiCharOperators.insert(std::make_pair("==", Token::Type::equal));
+  multiCharOperators.insert(std::make_pair(">", Token::Type::greater));
+  multiCharOperators.insert(std::make_pair("<", Token::Type::less));
+  multiCharOperators.insert(std::make_pair(">=", Token::Type::greaterEq));
+  multiCharOperators.insert(std::make_pair("<=", Token::Type::lessEq));
+  multiCharOperators.insert(std::make_pair("!=", Token::Type::diff));
 }
 
 Token Scanner::getNextToken() {
@@ -28,6 +39,7 @@ Token Scanner::getNextToken() {
     if (isspace(nextChar)) return parseSpace();
     if (isValidIdentiferChar(nextChar)) return parseAlpha();
     if (isdigit(nextChar)) return parseDigit();
+    if (nextChar == '"') return parseQuotationMark();
     if (ispunct(nextChar)) return parsePunct();
     return Token(Token::Type::NaT);
   }
@@ -102,11 +114,39 @@ Token Scanner::parseDigit() {
 }
 
 Token Scanner::parsePunct() {
-  std::string tmp = "" + getNextChar();
+  std::string tmp = "";
+  tmp += getNextChar();
+  moveForward();
 
   auto findedToken = onlySinglePunct.find(tmp);
   if (findedToken != onlySinglePunct.end()) return Token(findedToken->second);
 
-  //   char c;
-  //   while (ispunct(c = get))
+  char c;
+  if (!ispunct(c = getNextChar())) return Token(Token::Type::NaT, tmp);
+
+  tmp += c;
+  findedToken = multiCharOperators.find(tmp);
+  if (findedToken != multiCharOperators.end()) {
+    moveForward();
+    return Token(findedToken->second);
+  }
+
+  return Token(Token::Type::NaT, tmp.substr(0, 1));
+}
+
+Token Scanner::parseQuotationMark() {
+  std::string tmp = "";
+  char c;
+
+  moveForward();
+  while ((c = getNextChar()) != '"' && c != '\n' && c != EOF) {
+    tmp += c;
+    moveForward();
+  }
+
+  if (c != '"')
+    return Token(Token::Type::NaT, tmp);
+
+  moveForward();
+  return Token(Token::Type::stringT, tmp);
 }

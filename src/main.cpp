@@ -5,7 +5,7 @@
 #include "scanner/Scanner.h"
 
 int main() {
-  std::stringstream sss("   its a for   token \n   sss");
+  std::stringstream sss("   its a for  112  token ?? += \"aaaa\" \n   sss");
 
   Scanner scan(sss);
 
@@ -13,7 +13,7 @@ int main() {
   while ((t = scan.getNextToken()).getType() != Token::Type::eof) {
     std::cout << static_cast<std::underlying_type<Token::Type>::type>(
                      t.getType())
-              << std::endl;
+              << " " << t.getInteger() << " " << t.getString() << std::endl;
   }
   return 0;
 }
