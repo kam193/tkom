@@ -18,10 +18,9 @@ class Scanner {
 
  private:
   std::istream &in;
-  struct ReadingState {
-    bool newLine = true;  // Begin of the new line
-    int currentLine = 0;
-  } currentState;
+  bool isNewLine = true;  // Begin of the new line
+  int currentLine = 1;
+  int currentColumn = 0;
   std::map<std::string, Token::Type> keywordsTokens;
   std::map<std::string, Token::Type> onlySinglePunct;
   std::map<std::string, Token::Type> multiCharOperators;
@@ -32,7 +31,13 @@ class Scanner {
   bool isValidIdentiferChar(char c);
   bool isValidRealNumber(const std::string &value, int pointerPosition);
   bool isValidIntegerNumber(const std::string &value);
-  bool isValidHexNumber(const std::string);
+  bool isValidHexNumber(const std::string &value);
+
+  Token unvalidToken(const std::string &value);
+  Token makeToken(Token::Type type, std::int64_t value);
+  Token makeToken(Token::Type type);
+  Token makeToken(double value);
+  Token makeToken(Token::Type type, std::string str);
 
   Token parseNewLine();
   Token parseSpace();

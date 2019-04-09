@@ -49,18 +49,25 @@ class Token {
   };
 
   Token() {}
-  Token(Type type, std::int64_t value)
-      : type(type), numValue({.integer = value}) {}
-  explicit Token(Type type) : type(type) {}
-  explicit Token(std::string str) : type(Type::identifier), strValue(str) {}
-  explicit Token(double value)
-      : type(Type::realNumber), numValue({.real = value}) {}
-  Token(Type type, std::string str) : type(type), strValue(str) {}
+  Token(Type type, std::int64_t value, int line, int column)
+      : type(type), numValue({.integer = value}), line(line), column(column) {}
+  Token(Type type, int line, int column)
+      : type(type), line(line), column(column) {}
+  Token(double value, int line, int column)
+      : type(Type::realNumber),
+        numValue({.real = value}),
+        line(line),
+        column(column) {}
+  Token(Type type, std::string str, int line, int column)
+      : type(type), strValue(str), line(line), column(column) {}
 
   std::int64_t getInteger() { return numValue.integer; }
   double getReal() { return numValue.real; }
   std::string getString() { return strValue; }
   Type getType() { return type; }
+
+  int getLine() { return line; }
+  int getColumn() { return column; }
 
  private:
   Type type = Type::NaT;
@@ -69,6 +76,8 @@ class Token {
     double real;
   } numValue = {.integer = 0};
   std::string strValue = "";
+  int line = 0;
+  int column = 0;
 };
 
 #endif  // SRC_SCANNER_TOKEN_H_

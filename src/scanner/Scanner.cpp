@@ -42,14 +42,14 @@ Token Scanner::getNextToken() {
 
   skipWhitespaces();
   while ((nextChar = getNextChar())) {
-    if (nextChar == EOF) return Token(Token::Type::eof);
+    if (nextChar == EOF) return makeToken(Token::Type::eof);
     if (nextChar == '\n') return parseNewLine();
     if (isspace(nextChar)) return parseSpace();
     if (isdigit(nextChar)) return parseDigit();
     if (isValidIdentiferChar(nextChar)) return parseAlpha();
     if (nextChar == '"') return parseQuotationMark();
     if (ispunct(nextChar)) return parsePunct();
-    return Token(Token::Type::NaT);
+    return unvalidToken("" + nextChar);
   }
 }
 
@@ -59,13 +59,16 @@ char Scanner::getNextChar() {
   return in.peek();
 }
 
-void Scanner::moveForward() { in.get(); }  // TODO: test error
+void Scanner::moveForward() {
+  in.get();
+  currentColumn += 1;
+}
 
 void Scanner::skipWhitespaces() {
   // Don't skip whitespaces on begin of line: they are used
   // for define code blocks
-  if (currentState.newLine) {
-    currentState.newLine = false;
+  if (isNewLine) {
+    isNewLine = false;
     return;
   }
 
@@ -75,10 +78,54 @@ void Scanner::skipWhitespaces() {
 
 bool Scanner::isValidIdentiferChar(char c) { return isalnum(c) || c == '_'; }
 
+bool Scanner::isValidRealNumber(const std::string &value, int pointerPosition) {
+  for (int i = 0; i < value.size(); ++i) {
+    if (i != pointerPosition && !isdigit(value[i])) return false;
+  }
+  return value[pointerPosition] == '.';
+}
+
+bool Scanner::isValidIntegerNumber(const std::string &value) {
+  for (auto &digit : value) {
+    if (!isdigit(digit)) return false;
+  }
+  return true;
+}
+
+bool Scanner::isValidHexNumber(const std::string &value) {
+  for (auto &digit : value) {
+    if (!isxdigit(digit)) return false;
+  }
+  return true;
+}
+
+Token Scanner::unvalidToken(const std::string &value) {
+  return Token(Token::Type::NaT, value, currentLine, currentColumn);
+}
+
+Token Scanner::makeToken(Token::Type type, std::int64_t value) {
+  return Token(type, value, currentLine, currentColumn);
+}
+
+Token Scanner::makeToken(Token::Type type) {
+  return Token(type, currentLine, currentColumn);
+}
+
+Token Scanner::makeToken(double value) {
+  return Token(value, currentLine, currentLine);
+}
+
+Token Scanner::makeToken(Token::Type type, std::string str) {
+  return Token(type, str, currentLine, currentColumn);
+}
+
 Token Scanner::parseNewLine() {
-  currentState.newLine = true;
+  isNewLine = true;
   moveForward();
-  return Token(Token::Type::nl);
+  auto token = makeToken(Token::Type::nl);
+  currentLine += 1;
+  currentColumn = 0;
+  return token;
 }
 
 Token Scanner::parseSpace() {
@@ -90,7 +137,7 @@ Token Scanner::parseSpace() {
     moveForward();
   }
 
-  return Token(Token::Type::space, spacesCount);
+  return makeToken(Token::Type::space, spacesCount);
 }
 
 Token Scanner::parseAlpha() {
@@ -104,14 +151,12 @@ Token Scanner::parseAlpha() {
 
   auto findedKeyword = keywordsTokens.find(identifer);
   if (findedKeyword != keywordsTokens.end())
-    return Token(findedKeyword->second);
+    return makeToken(findedKeyword->second);
 
-  return Token(identifer);
+  return makeToken(Token::Type::identifier, identifer);
 }
 
 Token Scanner::parseDigit() {
-  // TODO: other types of numbers
-
   std::string tmp = "";
   char c;
   while (isalnum(c = getNextChar())) {
@@ -126,17 +171,18 @@ Token Scanner::parseDigit() {
       tmp += c;
       moveForward();
     }
-    // is valid realnumber
-    return Token(std::stod(tmp));
+    if (isValidRealNumber(tmp, pointerPosition))
+      return makeToken(std::stod(tmp));
   }
   if (tmp.size() > 2 && tmp.substr(0, 2) == "0x") {
-    // is valid hex
-    double t = std::stoll(tmp.substr(2, tmp.size()), 0, 16);
-    return Token(Token::Type::integerNumber,
-                 std::stoll(tmp.substr(2, tmp.size()), 0, 16));
+    std::string onlyNumber = tmp.substr(2, tmp.size());
+    if (isValidHexNumber(onlyNumber))
+      return makeToken(Token::Type::integerNumber,
+                       std::stoll(onlyNumber, 0, 16));
   }
-  // is valid Int
-  return Token(Token::Type::integerNumber, std::stoi(tmp));
+  if (isValidIntegerNumber(tmp))
+    return makeToken(Token::Type::integerNumber, std::stoi(tmp));
+  return unvalidToken(tmp);
 }
 
 Token Scanner::parsePunct() {
@@ -145,7 +191,8 @@ Token Scanner::parsePunct() {
   moveForward();
 
   auto findedToken = onlySinglePunct.find(tmp);
-  if (findedToken != onlySinglePunct.end()) return Token(findedToken->second);
+  if (findedToken != onlySinglePunct.end())
+    return makeToken(findedToken->second);
 
   if (getNextChar() == '=') {
     tmp += '=';
@@ -154,10 +201,10 @@ Token Scanner::parsePunct() {
 
   findedToken = multiCharOperators.find(tmp);
   if (findedToken != multiCharOperators.end()) {
-    return Token(findedToken->second);
+    return makeToken(findedToken->second);
   }
 
-  return Token(Token::Type::NaT, tmp);
+  return unvalidToken(tmp);
 }
 
 Token Scanner::parseQuotationMark() {
@@ -170,8 +217,8 @@ Token Scanner::parseQuotationMark() {
     moveForward();
   }
 
-  if (c != '"') return Token(Token::Type::NaT, tmp);
+  if (c != '"') return unvalidToken(tmp);
 
   moveForward();
-  return Token(Token::Type::stringT, tmp);
+  return makeToken(Token::Type::stringT, tmp);
 }

@@ -98,14 +98,52 @@ BOOST_AUTO_TEST_CASE(test_whitespace_recognize_and_ignore) {
   }
 }
 
+BOOST_AUTO_TEST_CASE(test_positions) {
+  std::string program = "a1 \n   a2 a3";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  int expected[][2] = {{1, 2}, {1, 4}, {2, 3}, {2, 5}, {2, 8}};
+  for (auto& expPosition : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST(token.getLine() == expPosition[0]);
+    BOOST_TEST(token.getColumn() == expPosition[1]);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_space_counting) {
+  std::string program = "   \n  \t  \n\r\r\n";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  int expected[] = {3, 5, 2};
+  for (auto& expSize : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST((token.getType() == ttype::space));
+    BOOST_TEST(token.getInteger() == expSize);
+    scanner.getNextToken();  // ignore NL
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_eof_after_eof) {
+  std::string program = "token";
+  std::stringstream input(program);
+
+  Scanner scanner(input);
+
+  scanner.getNextToken();
+  BOOST_TEST((scanner.getNextToken().getType() == ttype::eof));
+  BOOST_TEST((scanner.getNextToken().getType() == ttype::eof));
+}
+
 // TODO:
-// space counting
-// after EOF, return EOF when getNextToken() called
 // operators
 // assigment
 // strings
-// multiline
 // not a token, erros like 123abc, "aaa, ...
-// line & position counting
 
 BOOST_AUTO_TEST_SUITE_END()
