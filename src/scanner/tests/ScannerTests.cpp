@@ -140,10 +140,87 @@ BOOST_AUTO_TEST_CASE(test_eof_after_eof) {
   BOOST_TEST((scanner.getNextToken().getType() == ttype::eof));
 }
 
-// TODO:
-// operators
-// assigment
-// strings
-// not a token, erros like 123abc, "aaa, ...
+BOOST_AUTO_TEST_CASE(test_single_punct_recognize) {
+  std::string program = "( ) [ ] : , =";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  ttype expected[] = {ttype::openBracket,
+                      ttype::closeBracket,
+                      ttype::openSquareBracket,
+                      ttype::closeSquareBracket,
+                      ttype::colon,
+                      ttype::comma,
+                      ttype::assign};
+  for (auto& expType : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST((token.getType() == expType));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_math_operator_recognize) {
+  std::string program = "+ - / ^ * += -=";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  ttype expected[] = {ttype::add,      ttype::sub,      ttype::divOp,
+                      ttype::expOp,    ttype::multipOp, ttype::addAssign,
+                      ttype::subAssign};
+  for (auto& expType : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST((token.getType() == expType));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_comparation_operator_recognize) {
+  std::string program = "< > >= <= != ==";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  ttype expected[] = {ttype::less,   ttype::greater, ttype::greaterEq,
+                      ttype::lessEq, ttype::diff,    ttype::equal};
+  for (auto& expType : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST((token.getType() == expType));
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_string_recognize) {
+  std::string program =
+      "\"lorem\" \"ips ?? 1234 e $ um \" \" 34 == 2 + 1 return \" ";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  std::string expected[] = {"lorem", "ips ?? 1234 e $ um ",
+                            " 34 == 2 + 1 return "};
+  for (auto& expStr : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST((token.getType() == ttype::stringT));
+    BOOST_TEST(token.getString() == expStr);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_token) {
+  std::string program = "?&* 123abs 0x12Q \"oh no \n";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  std::string expected[] = {"?&*", "123abs", "0x12Q", "oh no "};
+  for (auto& expStr : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST((token.getType() == ttype::NaT));
+    BOOST_TEST(token.getString() == expStr);
+  }
+}
 
 BOOST_AUTO_TEST_SUITE_END()

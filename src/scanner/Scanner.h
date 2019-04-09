@@ -45,6 +45,7 @@ class Scanner {
   Token parseDigit();
   Token parsePunct();
   Token parseQuotationMark();
+  Token parseUnexpectedChar(std::string start = "");
 };
 
 #endif  // SRC_SCANNER_SCANNER_H_

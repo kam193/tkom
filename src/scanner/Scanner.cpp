@@ -49,7 +49,7 @@ Token Scanner::getNextToken() {
     if (isValidIdentiferChar(nextChar)) return parseAlpha();
     if (nextChar == '"') return parseQuotationMark();
     if (ispunct(nextChar)) return parsePunct();
-    return unvalidToken("" + nextChar);
+    return parseUnexpectedChar();
   }
 }
 
@@ -204,7 +204,7 @@ Token Scanner::parsePunct() {
     return makeToken(findedToken->second);
   }
 
-  return unvalidToken(tmp);
+  return parseUnexpectedChar(tmp);
 }
 
 Token Scanner::parseQuotationMark() {
@@ -221,4 +221,14 @@ Token Scanner::parseQuotationMark() {
 
   moveForward();
   return makeToken(Token::Type::stringT, tmp);
+}
+
+Token Scanner::parseUnexpectedChar(std::string start) {
+  char c;
+
+  while (isgraph(c = getNextChar())) {
+    start += c;
+    moveForward();
+  }
+  return unvalidToken(start);
 }
