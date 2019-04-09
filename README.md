@@ -6,4 +6,4 @@ Use `make build`
 
 # Run unittests
 
-Use `make tests`
+Use `make tests`. This require `boost` >= `1.59`

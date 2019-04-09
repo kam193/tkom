@@ -36,7 +36,16 @@ class Token {
     nl,
     integerNumber,
     realNumber,
-    forT
+    forT,
+    continueT,
+    none,
+    returnT,
+    trueT,
+    falseT,
+    whileT,
+    ifT,
+    elseT,
+    def
   };
 
   Token() {}

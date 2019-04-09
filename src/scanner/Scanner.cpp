@@ -3,8 +3,16 @@
 #include "Scanner.h"
 
 Scanner::Scanner(std::istream &in) : in(in) {
+  keywordsTokens.insert(std::make_pair("True", Token::Type::trueT));
+  keywordsTokens.insert(std::make_pair("False", Token::Type::falseT));
+  keywordsTokens.insert(std::make_pair("None", Token::Type::none));
+  keywordsTokens.insert(std::make_pair("while", Token::Type::whileT));
   keywordsTokens.insert(std::make_pair("for", Token::Type::forT));
-  // rest of keywords
+  keywordsTokens.insert(std::make_pair("if", Token::Type::ifT));
+  keywordsTokens.insert(std::make_pair("else", Token::Type::elseT));
+  keywordsTokens.insert(std::make_pair("continue", Token::Type::continueT));
+  keywordsTokens.insert(std::make_pair("def", Token::Type::def));
+  keywordsTokens.insert(std::make_pair("return", Token::Type::returnT));
 
   onlySinglePunct.insert(std::make_pair("(", Token::Type::openBracket));
   onlySinglePunct.insert(std::make_pair(")", Token::Type::closeBracket));
