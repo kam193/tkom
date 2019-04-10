@@ -17,7 +17,19 @@ the end of token) and token ID. It also try to print three possible
 value of tokens: string, integer and double. This is only for feature
 presentation.
 
-Compiled version can be run by `./tkom.out`. Output for example file is:
+Compiled version can be run by `./tkom.out`.
+
+For example file like:
+
+```python
+def function_name(arg1):
+    x = arg1 / 3
+    return x + arg1
+
+function_name(23)
+```
+
+Output is:
 
     ./tkom.out < examples/example.py
      LINE | COL | TOKEN | STR_VALUE | DOUBLE_VALUE | INT_VALUE
