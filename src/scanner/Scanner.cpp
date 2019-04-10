@@ -41,16 +41,17 @@ Token Scanner::getNextToken() {
   char nextChar;
 
   skipWhitespaces();
-  while ((nextChar = getNextChar())) {
-    if (nextChar == EOF) return makeToken(Token::Type::eof);
-    if (nextChar == '\n') return parseNewLine();
-    if (isspace(nextChar)) return parseSpace();
-    if (isdigit(nextChar)) return parseDigit();
-    if (isValidIdentiferChar(nextChar)) return parseAlpha();
-    if (nextChar == '"') return parseQuotationMark();
-    if (ispunct(nextChar)) return parsePunct();
-    return parseUnexpectedChar();
-  }
+  skipComment();
+
+  nextChar = getNextChar();
+  if (nextChar == EOF) return makeToken(Token::Type::eof);
+  if (nextChar == '\n') return parseNewLine();
+  if (isspace(nextChar)) return parseSpace();
+  if (isdigit(nextChar)) return parseDigit();
+  if (isValidIdentiferChar(nextChar)) return parseAlpha();
+  if (nextChar == '"') return parseQuotationMark();
+  if (ispunct(nextChar)) return parsePunct();
+  return parseUnexpectedChar();
 }
 
 char Scanner::getNextChar() {
@@ -74,6 +75,14 @@ void Scanner::skipWhitespaces() {
 
   char c;
   while ((c = getNextChar()) != '\n' && isspace(c)) moveForward();
+}
+
+void Scanner::skipComment() {
+  char c = getNextChar();
+
+  if (c != '#') return;
+
+  while ((c = getNextChar()) != '\n' && c != EOF) moveForward();
 }
 
 bool Scanner::isValidIdentiferChar(char c) { return isalnum(c) || c == '_'; }
@@ -200,9 +209,8 @@ Token Scanner::parsePunct() {
   }
 
   findedToken = multiCharOperators.find(tmp);
-  if (findedToken != multiCharOperators.end()) {
+  if (findedToken != multiCharOperators.end())
     return makeToken(findedToken->second);
-  }
 
   return parseUnexpectedChar(tmp);
 }

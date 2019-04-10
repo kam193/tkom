@@ -223,4 +223,69 @@ BOOST_AUTO_TEST_CASE(test_invalid_token) {
   }
 }
 
+BOOST_AUTO_TEST_CASE(test_skip_comments) {
+  std::string program = "valid_token # there is no more \nnext_token";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  std::string expected[] = {"valid_token", "next_token"};
+  for (auto& expIdentifer : expected) {
+    token = scanner.getNextToken();
+    if (token.getType() == ttype::nl) continue;
+
+    BOOST_TEST((token.getType() == ttype::identifier));
+    BOOST_TEST(token.getString() == expIdentifer);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_valids_token) {
+  std::string program = "valid_token _ _this_also var123 myVar VAR V_r";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  std::string expected[] = {"valid_token", "_",   "_this_also", "var123",
+                            "myVar",       "VAR", "V_r"};
+  for (auto& expIdentifer : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST((token.getType() == ttype::identifier));
+    BOOST_TEST(token.getString() == expIdentifer);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_mixed_tokens) {
+  std::string program =
+      "z24 = [\"a\", 23, 0xde] \n"
+      "A = 32.4 * 4\n"
+      "if a == 23:\n"
+      "   return True";
+  std::stringstream input(program);
+  Token token;
+
+  Scanner scanner(input);
+
+  ttype expected[] = {
+      /* line 1 */
+      ttype::identifier, ttype::assign, ttype::openSquareBracket,
+      ttype::stringT, ttype::comma, ttype::integerNumber, ttype::comma,
+      ttype::integerNumber, ttype::closeSquareBracket, ttype::nl,
+      /* line 2 */
+      ttype::identifier, ttype::assign, ttype::realNumber, ttype::multipOp,
+      ttype::integerNumber, ttype::nl,
+      /* line 3 */
+      ttype::ifT, ttype::identifier, ttype::equal, ttype::integerNumber,
+      ttype::colon, ttype::nl,
+      /* line 4 */
+      ttype::space, ttype::returnT, ttype::trueT,
+      /* EOF */
+      ttype::eof};
+  for (auto& expType : expected) {
+    token = scanner.getNextToken();
+    BOOST_TEST((token.getType() == expType));
+  }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

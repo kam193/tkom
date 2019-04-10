@@ -28,6 +28,7 @@ class Scanner {
   char getNextChar();
   void moveForward();
   void skipWhitespaces();
+  void skipComment();
   bool isValidIdentiferChar(char c);
   bool isValidRealNumber(const std::string &value, int pointerPosition);
   bool isValidIntegerNumber(const std::string &value);
