@@ -8,7 +8,9 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+
 #include "Token.h"
+#include "Validation.h"
 
 class Scanner {
  public:
@@ -29,10 +31,6 @@ class Scanner {
   void moveForward();
   void skipWhitespaces();
   void skipComment();
-  bool isValidIdentiferChar(char c);
-  bool isValidRealNumber(const std::string &value, int pointerPosition);
-  bool isValidIntegerNumber(const std::string &value);
-  bool isValidHexNumber(const std::string &value);
 
   Token unvalidToken(const std::string &value);
   Token makeToken(Token::Type type, std::int64_t value);

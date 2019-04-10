@@ -48,7 +48,7 @@ Token Scanner::getNextToken() {
   if (nextChar == '\n') return parseNewLine();
   if (isspace(nextChar)) return parseSpace();
   if (isdigit(nextChar)) return parseDigit();
-  if (isValidIdentiferChar(nextChar)) return parseAlpha();
+  if (validation::isValidIdentiferChar(nextChar)) return parseAlpha();
   if (nextChar == '"') return parseQuotationMark();
   if (ispunct(nextChar)) return parsePunct();
   return parseUnexpectedChar();
@@ -83,29 +83,6 @@ void Scanner::skipComment() {
   if (c != '#') return;
 
   while ((c = getNextChar()) != '\n' && c != EOF) moveForward();
-}
-
-bool Scanner::isValidIdentiferChar(char c) { return isalnum(c) || c == '_'; }
-
-bool Scanner::isValidRealNumber(const std::string &value, int pointerPosition) {
-  for (int i = 0; i < value.size(); ++i) {
-    if (i != pointerPosition && !isdigit(value[i])) return false;
-  }
-  return value[pointerPosition] == '.';
-}
-
-bool Scanner::isValidIntegerNumber(const std::string &value) {
-  for (auto &digit : value) {
-    if (!isdigit(digit)) return false;
-  }
-  return true;
-}
-
-bool Scanner::isValidHexNumber(const std::string &value) {
-  for (auto &digit : value) {
-    if (!isxdigit(digit)) return false;
-  }
-  return true;
 }
 
 Token Scanner::unvalidToken(const std::string &value) {
@@ -153,7 +130,7 @@ Token Scanner::parseAlpha() {
   std::string identifer;
   char c;
 
-  while (isValidIdentiferChar((c = getNextChar()))) {
+  while (validation::isValidIdentiferChar((c = getNextChar()))) {
     identifer += c;
     moveForward();
   }
@@ -180,16 +157,16 @@ Token Scanner::parseDigit() {
       tmp += c;
       moveForward();
     }
-    if (isValidRealNumber(tmp, pointerPosition))
+    if (validation::isValidRealNumber(tmp, pointerPosition))
       return makeToken(std::stod(tmp));
   }
   if (tmp.size() > 2 && tmp.substr(0, 2) == "0x") {
     std::string onlyNumber = tmp.substr(2, tmp.size());
-    if (isValidHexNumber(onlyNumber))
+    if (validation::isValidHexNumber(onlyNumber))
       return makeToken(Token::Type::integerNumber,
                        std::stoll(onlyNumber, 0, 16));
   }
-  if (isValidIntegerNumber(tmp))
+  if (validation::isValidIntegerNumber(tmp))
     return makeToken(Token::Type::integerNumber, std::stoi(tmp));
   return unvalidToken(tmp);
 }
