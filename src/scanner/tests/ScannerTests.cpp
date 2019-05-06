@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE(test_skip_comments) {
   std::string expected[] = {"valid_token", "next_token"};
   for (auto& expIdentifer : expected) {
     token = scanner.getNextToken();
-    if (token.getType() == ttype::nl) continue;
+    if (token.getType() == ttype::nl) token = scanner.getNextToken();
 
     BOOST_TEST((token.getType() == ttype::identifier));
     BOOST_TEST(token.getString() == expIdentifer);
