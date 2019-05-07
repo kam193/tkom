@@ -16,6 +16,7 @@ BOOST_AUTO_TEST_CASE(test_integer_numbers_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();  // skip first space == 0
 
   int64_t expected[] = {123, 2745, 0, 13, 123456789};
   for (auto& expValue : expected) {
@@ -31,6 +32,7 @@ BOOST_AUTO_TEST_CASE(test_real_numbers_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   double expected[] = {12.3, 0.5, 9.0, 0.0, 123.6};
   for (auto& expValue : expected) {
@@ -46,6 +48,7 @@ BOOST_AUTO_TEST_CASE(test_boolean_none_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   ttype expected[] = {ttype::trueT, ttype::falseT, ttype::none};
   for (auto& expType : expected) {
@@ -60,6 +63,7 @@ BOOST_AUTO_TEST_CASE(test_loop_conditional_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   ttype expected[] = {ttype::forT, ttype::whileT, ttype::ifT, ttype::elseT};
   for (auto& expType : expected) {
@@ -74,6 +78,7 @@ BOOST_AUTO_TEST_CASE(test_controlkeywords_def_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   ttype expected[] = {ttype::returnT, ttype::continueT, ttype::def};
   for (auto& expType : expected) {
@@ -91,7 +96,7 @@ BOOST_AUTO_TEST_CASE(test_whitespace_recognize_and_ignore) {
 
   ttype expected[] = {ttype::space,      ttype::nl,         ttype::space,
                       ttype::identifier, ttype::identifier, ttype::nl,
-                      ttype::eof};
+                      ttype::space,      ttype::eof};
   for (auto& expType : expected) {
     token = scanner.getNextToken();
     BOOST_TEST((token.getType() == expType));
@@ -104,6 +109,7 @@ BOOST_AUTO_TEST_CASE(test_positions) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   int expected[][2] = {{1, 2}, {1, 4}, {2, 3}, {2, 5}, {2, 8}};
   for (auto& expPosition : expected) {
@@ -114,13 +120,13 @@ BOOST_AUTO_TEST_CASE(test_positions) {
 }
 
 BOOST_AUTO_TEST_CASE(test_space_counting) {
-  std::string program = "   \n  \t  \n\r\r\n";
+  std::string program = "\n   \n  \t  \n\r\r\n";
   std::stringstream input(program);
   Token token;
 
   Scanner scanner(input);
 
-  int expected[] = {3, 5, 2};
+  int expected[] = {0, 3, 5, 2};
   for (auto& expSize : expected) {
     token = scanner.getNextToken();
     BOOST_TEST((token.getType() == ttype::space));
@@ -134,6 +140,7 @@ BOOST_AUTO_TEST_CASE(test_eof_after_eof) {
   std::stringstream input(program);
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   scanner.getNextToken();
   BOOST_TEST((scanner.getNextToken().getType() == ttype::eof));
@@ -146,6 +153,7 @@ BOOST_AUTO_TEST_CASE(test_single_punct_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   ttype expected[] = {ttype::openBracket,
                       ttype::closeBracket,
@@ -166,6 +174,7 @@ BOOST_AUTO_TEST_CASE(test_math_operator_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   ttype expected[] = {ttype::add,      ttype::sub,      ttype::divOp,
                       ttype::expOp,    ttype::multipOp, ttype::addAssign,
@@ -182,6 +191,7 @@ BOOST_AUTO_TEST_CASE(test_comparation_operator_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   ttype expected[] = {ttype::less,   ttype::greater, ttype::greaterEq,
                       ttype::lessEq, ttype::diff,    ttype::equal};
@@ -198,6 +208,7 @@ BOOST_AUTO_TEST_CASE(test_string_recognize) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   std::string expected[] = {"lorem", "ips ?? 1234 e $ um ",
                             " 34 == 2 + 1 return "};
@@ -214,6 +225,7 @@ BOOST_AUTO_TEST_CASE(test_invalid_token) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   std::string expected[] = {"?&*", "123abs", "0x12Q", "oh no "};
   for (auto& expStr : expected) {
@@ -233,7 +245,8 @@ BOOST_AUTO_TEST_CASE(test_skip_comments) {
   std::string expected[] = {"valid_token", "next_token"};
   for (auto& expIdentifer : expected) {
     token = scanner.getNextToken();
-    if (token.getType() == ttype::nl) token = scanner.getNextToken();
+    while (token.getType() == ttype::nl || token.getType() == ttype::space)
+      token = scanner.getNextToken();
 
     BOOST_TEST((token.getType() == ttype::identifier));
     BOOST_TEST(token.getString() == expIdentifer);
@@ -246,6 +259,7 @@ BOOST_AUTO_TEST_CASE(test_valids_token) {
   Token token;
 
   Scanner scanner(input);
+  scanner.getNextToken();
 
   std::string expected[] = {"valid_token", "_",   "_this_also", "var123",
                             "myVar",       "VAR", "V_r"};
@@ -269,15 +283,15 @@ BOOST_AUTO_TEST_CASE(test_mixed_tokens) {
 
   ttype expected[] = {
       /* line 1 */
-      ttype::identifier, ttype::assign, ttype::openSquareBracket,
+      ttype::space, ttype::identifier, ttype::assign, ttype::openSquareBracket,
       ttype::stringT, ttype::comma, ttype::integerNumber, ttype::comma,
       ttype::integerNumber, ttype::closeSquareBracket, ttype::nl,
       /* line 2 */
-      ttype::identifier, ttype::assign, ttype::realNumber, ttype::multipOp,
-      ttype::integerNumber, ttype::nl,
+      ttype::space, ttype::identifier, ttype::assign, ttype::realNumber,
+      ttype::multipOp, ttype::integerNumber, ttype::nl,
       /* line 3 */
-      ttype::ifT, ttype::identifier, ttype::equal, ttype::integerNumber,
-      ttype::colon, ttype::nl,
+      ttype::space, ttype::ifT, ttype::identifier, ttype::equal,
+      ttype::integerNumber, ttype::colon, ttype::nl,
       /* line 4 */
       ttype::space, ttype::returnT, ttype::trueT,
       /* EOF */

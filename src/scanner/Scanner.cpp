@@ -44,9 +44,9 @@ Token Scanner::getNextToken() {
   skipComment();
 
   nextChar = getNextChar();
+  if (isNewLine) return parseSpace();
   if (nextChar == EOF) return makeToken(Token::Type::eof);
   if (nextChar == '\n') return parseNewLine();
-  if (isspace(nextChar)) return parseSpace();
   if (isdigit(nextChar)) return parseDigit();
   if (validation::isValidIdentiferChar(nextChar)) return parseAlpha();
   if (nextChar == '"') return parseQuotationMark();
@@ -69,7 +69,6 @@ void Scanner::skipWhitespaces() {
   // Don't skip whitespaces on begin of line: they are used
   // for define code blocks
   if (isNewLine) {
-    isNewLine = false;
     return;
   }
 
@@ -123,6 +122,7 @@ Token Scanner::parseSpace() {
     moveForward();
   }
 
+  isNewLine = false;
   return makeToken(Token::Type::space, spacesCount);
 }
 
