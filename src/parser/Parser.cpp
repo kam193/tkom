@@ -6,28 +6,33 @@
 
 std::unordered_map<ParseState, std::set<ttype>, std::hash<int>>
     Parser::expectedTokens = {
-        {InstructionState, {ttype::def, ttype::nl, ttype::eof}},
-        {FuncDefParams,
-         {ttype::identifier, ttype::comma, ttype::closeBracket}}};
+        {ParamsDef, {ttype::identifier, ttype::comma, ttype::closeBracket}}};
 
 Program Parser::parse() {
   getNextToken(ttype::space);
 
   auto cb = parseCodeBlock(currentToken.getInteger());
 
+  // DEBUG
+  for (auto& instr : cb->instructions) {
+    auto type = instr->getInstructionType();
+  }
+
   std::cout << "Parsing end" << std::endl;
 
   return Program();
 }
 
-std::unique_ptr<Instruction> Parser::parseFunctionDef(int width) {
+std::unique_ptr<Instruction> Parser::tryParseFunctionDef(int width) {
+  if (currentToken.getType() != ttype::def) return nullptr;
+
   auto func = std::make_unique<Function>();
 
   getNextToken(ttype::identifier);
   func->name = currentToken.getString();
   getNextToken(ttype::openBracket);
 
-  while (getNextToken(FuncDefParams)) {
+  while (getNextToken(ParamsDef)) {
     if (currentToken.getType() == ttype::identifier)
       func->argumentNames.push_back(currentToken.getString());
     else if (currentToken.getType() == ttype::closeBracket)
@@ -39,7 +44,7 @@ std::unique_ptr<Instruction> Parser::parseFunctionDef(int width) {
   getNextToken(ttype::space);
 
   if (currentToken.getInteger() > width)
-    func->code = parseCodeBlock(currentToken.getInteger());
+    func->code = parseCodeBlock(currentToken.getInteger(), true);
   else
     throwError("Expected a new code block, but indend is incorrect");
 
@@ -49,46 +54,295 @@ std::unique_ptr<Instruction> Parser::parseFunctionDef(int width) {
   return func;
 }
 
-std::unique_ptr<CodeBlock> Parser::parseCodeBlock(int width) {
+std::unique_ptr<CodeBlock> Parser::parseCodeBlock(int width, bool inFunc,
+                                                  bool inLoop) {
   int currentSpace = width;
   auto code = std::make_unique<CodeBlock>();
 
   while (currentSpace == width) {
-    // parse & add instruction
-    // uwazac na instrukcje, ktore maja wewnatrz sobie blok kodu
-    // i zwracaja
+    getNextToken();
 
-    getNextToken(InstructionState);
+    std::unique_ptr<Instruction> instrPtr;
 
-    if (currentToken.getType() == ttype::def)
-      code->instructions.push_back(parseFunctionDef(width));
+    if ((instrPtr = tryParseFunctionDef(width)) != nullptr) {
+      code->instructions.push_back(std::move(instrPtr));
+    } else if (inFunc && currentToken.getType() == ttype::returnT) {
+      code->instructions.push_back(parseReturn());
+      break;
+    } else if (inLoop && currentToken.getType() == ttype::continueT) {
+      code->instructions.push_back(std::make_unique<Continue>());
+      getNextToken(ttype::nl);
+    } else if (inLoop && currentToken.getType() == ttype::breakT) {
+      code->instructions.push_back(std::make_unique<Break>());
+      getNextToken(ttype::nl);
+    } else if ((instrPtr = tryParseAssignExpr()) != nullptr) {
+      code->instructions.push_back(std::move(instrPtr));
+    } else if ((instrPtr = tryParseExpr()) != nullptr) {
+      code->instructions.push_front(std::move(instrPtr));
+    } else if ((instrPtr = tryParseIfExpr(width, inFunc, inLoop)) != nullptr) {
+      code->instructions.push_back(std::move(instrPtr));
+      // Support for else: try, check if previous is if, if is -> append else
+    } else if ((instrPtr = tryParseWhileLoop(width, inFunc)) != nullptr) {
+      code->instructions.push_back(std::move(instrPtr));
+    } else if ((instrPtr = tryParseForLoop(width, inFunc)) != nullptr) {
+      code->instructions.push_back(std::move(instrPtr));
+    }
 
     if (currentToken.getType() == ttype::eof) break;
-
     if (currentToken.getType() == ttype::nl) getNextToken(ttype::space);
+    if (currentToken.getType() != ttype::space)
+      throwError("Enexpected token inside code block.");
     currentSpace = currentToken.getInteger();
   }
 
   return code;
 }
 
-bool Parser::getNextToken(ParseState state) {
-  currentToken = scanner.getNextToken();
+std::unique_ptr<Return> Parser::parseReturn() {
+  auto returnInstr = std::make_unique<Return>();
+  std::unique_ptr<Instruction> instrPtr;
+
+  getNextToken();
+  if (currentToken.getType() == ttype::nl) {
+    returnInstr->value = std::make_unique<Constant>(Constant::Type::None);
+    getNextToken();
+  } else if ((instrPtr = tryParseCmpExpr(ttype::nl)) != nullptr) {
+    returnInstr->value = std::move(instrPtr);
+  } else if ((instrPtr = tryParseExpr()) != nullptr) {
+    returnInstr->value = std::move(instrPtr);
+  } else {
+    throwError("Not expected token after `return`");
+  }
+
+  return returnInstr;
+}
+
+std::unique_ptr<Instruction> Parser::tryParseArgument() {
+  std::unique_ptr<Instruction> argPtr;
+
+  if ((argPtr = tryParseValue()) != nullptr) return argPtr;
+  // sliced... etc...
+  // else if ((argPtr = tryParseSlice()) != nullptr) // To na końcu - gdy
+  // poprzedni typ zgodny ze slice!
+  //   return argPtr;
+  else if ((argPtr = tryParseFuncCall()) != nullptr) {
+    return argPtr;
+  } else if (currentToken.getType() == ttype::identifier) {
+    getNextToken();
+    return std::make_unique<Variable>(savedToken.getString());
+  }
+  return nullptr;
+}
+
+std::unique_ptr<Constant> Parser::tryParseValue() {
+  std::unique_ptr<Constant> valuePtr;
+  if ((valuePtr = tryParseConstant()) != nullptr)
+    return valuePtr;
+  else if ((valuePtr = tryParseList()) != nullptr)
+    return valuePtr;
+  return nullptr;
+}
+
+std::unique_ptr<Constant> Parser::tryParseConstant() {
+  ttype type = currentToken.getType();
+
+  std::unique_ptr<Constant> constPtr = nullptr;
+
+  if (type == ttype::none)
+    constPtr = std::make_unique<Constant>(Constant::Type::None);
+  else if (type == ttype::trueT)
+    constPtr = std::make_unique<Constant>(true);
+  else if (type == ttype::falseT)
+    constPtr = std::make_unique<Constant>(false);
+  else if (type == ttype::realNumber)
+    constPtr = std::make_unique<Constant>(currentToken.getReal());
+  else if (type == ttype::integerNumber)
+    constPtr = std::make_unique<Constant>(currentToken.getInteger());
+  else if (type == ttype::stringT)
+    constPtr = std::make_unique<Constant>(currentToken.getString());
+
+  if (constPtr != nullptr) getNextToken();
+
+  return constPtr;
+}
+
+std::unique_ptr<Expression> Parser::tryParseExpr() {
+  // TODO: rozbudowac!
+  auto argPtr = tryParseArgument();
+  if (argPtr == nullptr) return nullptr;
+
+  return std::make_unique<Expression>();
+}
+
+std::unique_ptr<CompareExpr> Parser::tryParseCmpExpr(ttype expectedEnd) {
+  auto leftExprPtr = tryParseExpr();
+  if (leftExprPtr == nullptr) return nullptr;
+
+  if (currentToken.getType() == expectedEnd ||
+      currentToken.getType() == ttype::eof)
+    return std::make_unique<CompareExpr>(std::move(leftExprPtr));
+
+  CompareExpr::Type type;
+  auto tokenType = currentToken.getType();
+  if (tokenType == ttype::greater)
+    type = CompareExpr::Type::Greater;
+  else if (tokenType == ttype::greaterEq)
+    type = CompareExpr::Type::GreaterEq;
+  else if (tokenType == ttype::less)
+    type = CompareExpr::Type::Less;
+  else if (tokenType == ttype::lessEq)
+    type = CompareExpr::Type::LessEq;
+  else if (tokenType == ttype::diff)
+    type = CompareExpr::Type::Different;
+  else if (tokenType == ttype::equal)
+    type = CompareExpr::Type::Equal;
+  else
+    throwError("Expected comparator");
+
+  getNextToken();
+  auto rightExpr = tryParseExpr();
+  if (rightExpr == nullptr) throwError("Expected right side of compare");
+  if (currentToken.getType() != expectedEnd ||
+      currentToken.getType() == ttype::eof)
+    throwError("Expected ':' or new line after compare expression");
+
+  return std::make_unique<CompareExpr>(type, std::move(leftExprPtr),
+                                       std::move(rightExpr));
+}
+
+std::unique_ptr<FunctionCall> Parser::tryParseFuncCall() {
+  if (currentToken.getType() != ttype::identifier) return nullptr;
+  std::string funcName = currentToken.getString();
+  if (!getNextToken(ttype::openBracket, true)) {
+    restoreToken();
+    return nullptr;
+  }
+
+  auto funcPtr = std::make_unique<FunctionCall>(funcName);
+  std::unique_ptr<Instruction> argumentPtr;
+
+  getNextToken();
+  while (currentToken.getType() != ttype::closeBracket) {
+    if ((argumentPtr = tryParseArgument()) != nullptr)
+      funcPtr->addArgument(std::move(argumentPtr));
+    else if (currentToken.getType() != ttype::comma)
+      throwError("Unexpected token inside function call arguments");
+    getNextToken();
+  }
+  getNextToken();
+  return funcPtr;
+}
+
+std::unique_ptr<Slice> Parser::tryParseSlice() {
+  if (currentToken.getType() != ttype::openSquareBracket) return nullptr;
+
+  getNextToken(ttype::integerNumber);
+  int start = currentToken.getInteger();
+  int end = 0;
+  auto state = Slice::SliceType::Start;
+  getNextToken();
+
+  if (currentToken.getType() == ttype::colon) {
+    state = Slice::SliceType::StartToEnd;
+    getNextToken();
+  }
+  if (state == Slice::SliceType::StartToEnd &&
+      currentToken.getType() == ttype::integerNumber) {
+    state = Slice::SliceType::StartToSlice;
+    end = currentToken.getInteger();
+    getNextToken();
+  }
+  if (currentToken.getType() != ttype::closeSquareBracket)
+    throwError("Expected end of slice");
+
+  return std::make_unique<Slice>(state, start, end);
+}
+
+std::unique_ptr<AssignExpr> Parser::tryParseAssignExpr() {
+  if (currentToken.getType() != ttype::identifier) return nullptr;
+  std::string variableName = currentToken.getString();
+  getNextToken();
+  AssignExpr::Type type;
+  if (currentToken.getType() == ttype::assign) {
+    type = AssignExpr::Type::Assign;
+  } else if (currentToken.getType() == ttype::addAssign) {
+    type = AssignExpr::Type::AddAssign;
+  } else if (currentToken.getType() == ttype::subAssign) {
+    type = AssignExpr::Type::SubAssign;
+  } else {
+    restoreToken();
+    return nullptr;
+  }
+
+  getNextToken();
+  auto rightExpr = tryParseExpr();
+  if (rightExpr == nullptr)
+    throwError("Asign operation need expression on right side");
+  return std::make_unique<AssignExpr>(type, variableName, std::move(rightExpr));
+}
+
+std::unique_ptr<If> Parser::tryParseIfExpr(int width, bool inFunction,
+                                           bool inLoop) {
+  if (currentToken.getType() != ttype::ifT) return nullptr;
+  getNextToken();
+  auto comp = tryParseCmpExpr();
+  getNextToken(ttype::nl);
+  getNextToken(ttype::space);
+  int blockSpace = currentToken.getInteger();
+  if (blockSpace <= width) throwError("Expected new code block");
+  auto code = parseCodeBlock(blockSpace, inFunction, inLoop);
+  return std::make_unique<If>(std::move(comp), std::move(code));
+}
+
+std::unique_ptr<While> Parser::tryParseWhileLoop(int width, bool inFunction) {
+  if (currentToken.getType() != ttype::whileT) return nullptr;
+  getNextToken();
+  auto comp = tryParseCmpExpr();
+  getNextToken(ttype::nl);
+  getNextToken(ttype::space);
+  int blockSpace = currentToken.getInteger();
+  if (blockSpace <= width) throwError("Expected new code block");
+  auto code = parseCodeBlock(blockSpace, inFunction, true);
+  return std::make_unique<While>(std::move(comp), std::move(code));
+}
+
+std::unique_ptr<For> Parser::tryParseForLoop(int width, bool inFunction) {}
+
+bool Parser::getNextToken() {
+  if (tokenRestored) {
+    std::swap(savedToken, currentToken);
+    tokenRestored = false;
+  } else {
+    savedToken = currentToken;
+    currentToken = scanner.getNextToken();
+  }
+  return true;
+}
+
+void Parser::restoreToken() {
+  std::swap(savedToken, currentToken);
+  tokenRestored = true;
+}
+
+bool Parser::getNextToken(ParseState state, bool no_except) {
+  getNextToken();
 
   auto findResult = expectedTokens[state].find(currentToken.getType());
   if (findResult != expectedTokens[state].end())
     return true;
-  else
-    throwError("Token type unexpected");
+  else if (no_except)
+    return false;
+  throwError("Token type unexpected");
 }
 
-bool Parser::getNextToken(ttype expectedType) {
-  currentToken = scanner.getNextToken();
+bool Parser::getNextToken(ttype expectedType, bool no_except) {
+  getNextToken();
 
   if (currentToken.getType() == expectedType)
     return true;
-  else
-    throwError("Token type unexpected");
+  else if (no_except)
+    return false;
+  throwError("Token type unexpected");
 }
 
 void Parser::throwError(std::string msg) {

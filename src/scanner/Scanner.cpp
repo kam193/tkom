@@ -8,9 +8,11 @@ Scanner::Scanner(std::istream &in) : in(in) {
   keywordsTokens.insert(std::make_pair("None", Token::Type::none));
   keywordsTokens.insert(std::make_pair("while", Token::Type::whileT));
   keywordsTokens.insert(std::make_pair("for", Token::Type::forT));
+  keywordsTokens.insert(std::make_pair("in", Token::Type::in));
   keywordsTokens.insert(std::make_pair("if", Token::Type::ifT));
   keywordsTokens.insert(std::make_pair("else", Token::Type::elseT));
   keywordsTokens.insert(std::make_pair("continue", Token::Type::continueT));
+  keywordsTokens.insert(std::make_pair("break", Token::Type::breakT));
   keywordsTokens.insert(std::make_pair("def", Token::Type::def));
   keywordsTokens.insert(std::make_pair("return", Token::Type::returnT));
 
