@@ -17,7 +17,12 @@
 
 using ttype = Token::Type;
 
-enum ParseState { InstructionState, ParamsDef, ReturnState };
+enum ParseState {
+  InstructionState,
+  ParamsDef,
+  ReturnState,
+  InstrEnd
+};  // rename: set of expected tokens
 
 class Parser {
  public:
@@ -35,6 +40,7 @@ class Parser {
   bool getNextToken(ttype expectedType, bool no_except = false);
   bool getNextToken();
   void restoreToken();
+  bool checkTokenType(ParseState state);
 
   std::unique_ptr<Instruction> tryParseFunctionDef(int width);
   std::unique_ptr<CodeBlock> parseCodeBlock(int width, bool inFunction = false,
@@ -49,7 +55,8 @@ class Parser {
   // tryParseSliced ???
   std::unique_ptr<Constant> tryParseList() { return nullptr; }  // td
 
-  std::unique_ptr<CompareExpr> tryParseCmpExpr(ttype expectedEnd = ttype::colon);
+  std::unique_ptr<CompareExpr> tryParseCmpExpr(
+      ttype expectedEnd = ttype::colon);
   std::unique_ptr<Expression> tryParseExpr();  // td
   std::unique_ptr<AssignExpr> tryParseAssignExpr();
   std::unique_ptr<If> tryParseIfExpr(int width, bool inFunction, bool inLoop);

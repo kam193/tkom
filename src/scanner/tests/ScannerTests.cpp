@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include <boost/test/included/unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 #include "../Scanner.h"
 
 namespace tt = boost::test_tools;

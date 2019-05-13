@@ -5,6 +5,7 @@
 
 #include <list>
 #include <memory>
+#include <regex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -34,22 +35,41 @@ class Instruction {
   // metoda wypisania
  public:
   virtual TypeInstruction getInstructionType() { return GeneralT; }
+  virtual std::string toString() { return "Instruction"; }
 };
 
 class CodeBlock : public Instruction {  // public virtual?
  public:
   std::list<std::unique_ptr<Instruction>> instructions;  // NOT A PUBLIC!!!!
   TypeInstruction getInstructionType() override { return CodeBlockT; }
+  std::string toString() override {
+    std::string outstr = "  ";
+    for (auto &instr : instructions) {
+      outstr += std::regex_replace(instr->toString(), std::regex("\n"), "\n  ");
+      outstr += "\n  ";
+    }
+    return outstr.substr(0, outstr.size() - 3);
+  }
 };
 
 class Function : public Instruction {
  public:
   std::unique_ptr<CodeBlock> code;  // NOT A PUBLIC
-  std::list<std::string> argumentNames;
+  std::vector<std::string> argumentNames;
   std::string name;
 
   TypeInstruction getInstructionType() override { return FunctionT; }
 
+  std::string toString() override {
+    std::string out = "def " + name + "(";
+    for (int i = 0; i < argumentNames.size(); ++i) {
+      out += argumentNames[i];
+      if (i != argumentNames.size() - 1) out += ", ";
+    }
+    out += "):\n";
+    out += code->toString();
+    return out;
+  }
   // evaluate (dziedziczone) -> dodaje do listy funkcji
   // call -> woła funkcję
 };
@@ -58,6 +78,7 @@ class Variable : public Instruction {
  public:
   explicit Variable(std::string name) : name(name) {}
   TypeInstruction getInstructionType() override { return VariableT; }
+  std::string toString() override { return name; }
 
  private:
   std::string name;
@@ -71,7 +92,7 @@ class Constant : public Instruction {
   double realValue;
   bool boolValue;
   std::string strValue;
-  std::unique_ptr<std::vector<Variable>> listValue;
+  std::unique_ptr<std::vector<Variable>> listValue;  // fix!
 
   explicit Constant(Type _type) : type(_type) {}
   explicit Constant(bool value) : type(Type::Bool), boolValue(value) {}
@@ -82,6 +103,24 @@ class Constant : public Instruction {
       : type(Type::List), listValue(std::move(values)) {}  // shared ptr?
 
   TypeInstruction getInstructionType() override { return ConstantT; }
+
+  std::string toString() override {
+    switch (type) {
+      case Type::None:
+        return "None";
+      case Type::Bool:
+        return boolValue ? "True" : "False";
+      case Type::Int:
+        return std::to_string(intValue);
+      case Type::Real:
+        return std::to_string(realValue);
+      case Type::Text:
+        return strValue;
+      // case Type::List:
+      default:
+        throw std::exception();
+    }
+  }
 };
 
 class Slice : public Instruction {
@@ -121,6 +160,7 @@ class Return : public Instruction {
  public:
   std::unique_ptr<Instruction> value;
   TypeInstruction getInstructionType() override { return ReturnT; }
+  std::string toString() override { return "return " + value->toString(); }
 };
 
 class Expression : public Instruction {
@@ -175,6 +215,14 @@ class If : public Instruction {
       : compare(std::move(compare)), ifCode(std::move(ifCode)) {}
 
   TypeInstruction getInstructionType() override { return IfT; }
+
+  std::string toString() override {
+    std::string out = "if ";
+    out += compare->toString();
+    out += ":\n";
+    out += ifCode->toString();
+    return out;
+  }
 
  private:
   std::unique_ptr<CompareExpr> compare;

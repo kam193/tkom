@@ -6,7 +6,8 @@
 
 std::unordered_map<ParseState, std::set<ttype>, std::hash<int>>
     Parser::expectedTokens = {
-        {ParamsDef, {ttype::identifier, ttype::comma, ttype::closeBracket}}};
+        {ParamsDef, {ttype::identifier, ttype::comma, ttype::closeBracket}},
+        {InstrEnd, {ttype::nl, ttype::eof}}};
 
 Program Parser::parse() {
   getNextToken(ttype::space);
@@ -17,6 +18,8 @@ Program Parser::parse() {
   for (auto& instr : cb->instructions) {
     auto type = instr->getInstructionType();
   }
+
+  std::cout << cb->toString() << std::endl;
 
   std::cout << "Parsing end" << std::endl;
 
@@ -103,7 +106,7 @@ std::unique_ptr<Return> Parser::parseReturn() {
   std::unique_ptr<Instruction> instrPtr;
 
   getNextToken();
-  if (currentToken.getType() == ttype::nl) {
+  if (checkTokenType(InstrEnd)) {
     returnInstr->value = std::make_unique<Constant>(Constant::Type::None);
     getNextToken();
   } else if ((instrPtr = tryParseCmpExpr(ttype::nl)) != nullptr) {
@@ -327,8 +330,7 @@ void Parser::restoreToken() {
 bool Parser::getNextToken(ParseState state, bool no_except) {
   getNextToken();
 
-  auto findResult = expectedTokens[state].find(currentToken.getType());
-  if (findResult != expectedTokens[state].end())
+  if (checkTokenType(state))
     return true;
   else if (no_except)
     return false;
@@ -343,6 +345,12 @@ bool Parser::getNextToken(ttype expectedType, bool no_except) {
   else if (no_except)
     return false;
   throwError("Token type unexpected");
+}
+
+bool Parser::checkTokenType(ParseState state) {
+  auto findResult = expectedTokens[state].find(currentToken.getType());
+  if (findResult != expectedTokens[state].end()) return true;
+  return false;
 }
 
 void Parser::throwError(std::string msg) {

@@ -10,7 +10,7 @@
 #include "parser/Parser.h"
 
 int main() {
-  std::string program = "def name(a, b, c):\n  if a == 4:\n    return True";
+  std::string program = "  def name(a, b, c):\n    if a == 4:\n      return True";
   std::stringstream input(program);
 
   Parser parser(input);
