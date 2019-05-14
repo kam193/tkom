@@ -21,7 +21,9 @@ enum ParseState {
   InstructionState,
   ParamsDef,
   ReturnState,
-  InstrEnd
+  InstrEnd,
+  OperatorsAddSub,
+  OperatorsMulDiv
 };  // rename: set of expected tokens
 
 class Parser {
@@ -36,11 +38,12 @@ class Parser {
   Token savedToken;
   bool tokenRestored = false;
 
-  bool getNextToken(ParseState state, bool no_except = false);
+  bool getNextToken(ParseState state, bool no_except = false); // Refactor: instead no_except: get & check
   bool getNextToken(ttype expectedType, bool no_except = false);
   bool getNextToken();
   void restoreToken();
   bool checkTokenType(ParseState state);
+  bool checkTokenType(ttype expectedType);
 
   std::unique_ptr<Instruction> tryParseFunctionDef(int width);
   std::unique_ptr<CodeBlock> parseCodeBlock(int width, bool inFunction = false,
@@ -57,7 +60,9 @@ class Parser {
 
   std::unique_ptr<CompareExpr> tryParseCmpExpr(
       ttype expectedEnd = ttype::colon);
-  std::unique_ptr<Expression> tryParseExpr();  // td
+  std::unique_ptr<Expression> tryParseExpr();
+  std::unique_ptr<Expression> tryParseExprMul();
+  std::unique_ptr<Expression> tryParseExprExp();
   std::unique_ptr<AssignExpr> tryParseAssignExpr();
   std::unique_ptr<If> tryParseIfExpr(int width, bool inFunction, bool inLoop);
   std::unique_ptr<For> tryParseForLoop(int width, bool inFunction);  // td

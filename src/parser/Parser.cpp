@@ -7,23 +7,22 @@
 std::unordered_map<ParseState, std::set<ttype>, std::hash<int>>
     Parser::expectedTokens = {
         {ParamsDef, {ttype::identifier, ttype::comma, ttype::closeBracket}},
-        {InstrEnd, {ttype::nl, ttype::eof}}};
+        {InstrEnd, {ttype::nl, ttype::eof}},
+        {OperatorsAddSub, {ttype::add, ttype::sub}},
+        {OperatorsMulDiv, {ttype::multipOp, ttype::divOp}}};
 
 Program Parser::parse() {
   getNextToken(ttype::space);
 
-  auto cb = parseCodeBlock(currentToken.getInteger());
+  auto code = parseCodeBlock(currentToken.getInteger());
 
-  // DEBUG
-  for (auto& instr : cb->instructions) {
-    auto type = instr->getInstructionType();
-  }
+  // // DEBUG
+  // for (auto& instr : code->instructions) {
+  //   auto type = instr->getInstructionType();
+  // }
 
-  std::cout << cb->toString() << std::endl;
-
-  std::cout << "Parsing end" << std::endl;
-
-  return Program();
+  // std::cout << code->toString() << std::endl;
+  return Program(std::move(code));
 }
 
 std::unique_ptr<Instruction> Parser::tryParseFunctionDef(int width) {
@@ -170,11 +169,52 @@ std::unique_ptr<Constant> Parser::tryParseConstant() {
 }
 
 std::unique_ptr<Expression> Parser::tryParseExpr() {
-  // TODO: rozbudowac!
-  auto argPtr = tryParseArgument();
-  if (argPtr == nullptr) return nullptr;
+  auto leftMul = tryParseExprMul();
+  if (leftMul == nullptr) return nullptr;
 
-  return std::make_unique<Expression>();
+  if (checkTokenType(OperatorsAddSub)) {
+    auto type = currentToken.getType() == ttype::add ? Expression::Type::Add
+                                                     : Expression::Type::Sub;
+    getNextToken();
+    auto rightMul = tryParseExprMul();
+    if (rightMul == nullptr) throwError("Right side of expression expected");
+
+    return std::make_unique<Expression>(std::move(leftMul), type,
+                                        std::move(rightMul));
+  }
+  return std::make_unique<Expression>(std::move(leftMul));
+}
+
+std::unique_ptr<Expression> Parser::tryParseExprMul() {
+  auto left = tryParseExprExp();
+  if (left == nullptr) return nullptr;
+
+  if (checkTokenType(OperatorsMulDiv)) {
+    auto type = currentToken.getType() == ttype::multipOp
+                    ? Expression::Type::Mul
+                    : Expression::Type::Div;
+    getNextToken();
+    auto right = tryParseExprExp();
+    if (right == nullptr) throwError("Right side of expression expected");
+
+    return std::make_unique<Expression>(std::move(left), type,
+                                        std::move(right));
+  }
+  return std::make_unique<Expression>(std::move(left));
+}
+
+std::unique_ptr<Expression> Parser::tryParseExprExp() {
+  auto left = tryParseArgument();
+  if (left == nullptr) return nullptr;
+  if (checkTokenType(ttype::expOp)) {
+    getNextToken();
+    auto right = tryParseArgument();
+    if (right == nullptr) throwError("Right side of expression expected");
+
+    return std::make_unique<Expression>(std::move(left), Expression::Type::Exp,
+                                        std::move(right));
+  }
+  return std::make_unique<Expression>(std::move(left));
 }
 
 std::unique_ptr<CompareExpr> Parser::tryParseCmpExpr(ttype expectedEnd) {
@@ -351,6 +391,10 @@ bool Parser::checkTokenType(ParseState state) {
   auto findResult = expectedTokens[state].find(currentToken.getType());
   if (findResult != expectedTokens[state].end()) return true;
   return false;
+}
+
+bool Parser::checkTokenType(ttype expectedType) {
+  return currentToken.getType() == expectedType;
 }
 
 void Parser::throwError(std::string msg) {

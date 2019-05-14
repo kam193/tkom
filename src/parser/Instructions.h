@@ -20,7 +20,9 @@ enum TypeInstruction {
   FunctionCallT,
   ReturnT,
   CompareExprT,
-  ExpressionT,
+  ExpressionAddT,
+  ExpressionMulT,
+  ExpressionExpT,
   AssignExprT,
   ContinueT,
   BreakT,
@@ -165,8 +167,57 @@ class Return : public Instruction {
 
 class Expression : public Instruction {
  public:
-  TypeInstruction getInstructionType() override { return ExpressionT; }
+  enum Type { None, Add, Sub, Mul, Div, Exp };
+
+  explicit Expression(std::unique_ptr<Instruction> left)
+      : leftExpr(std::move(left)), type(Type::None) {}
+  Expression(std::unique_ptr<Instruction> left, Type type,
+             std::unique_ptr<Instruction> right)
+      : leftExpr(std::move(left)), type(type), rightExpr(std::move(right)) {}
+
+  TypeInstruction getInstructionType() override { return ExpressionAddT; }
+  std::string toString() override {
+    std::string out = leftExpr->toString();
+    if (type != Type::None) {
+      out += typeToString();
+      out += rightExpr->toString();
+    }
+    return out;
+  }
+
+ private:
+  Type type;
+  std::unique_ptr<Instruction> leftExpr;
+  std::unique_ptr<Instruction> rightExpr = nullptr;
+  std::string typeToString() {
+    switch (type) {
+      case Type::None:
+        return "";
+      case Type::Add:
+        return " + ";
+      case Type::Sub:
+        return " - ";
+      case Type::Mul:
+        return " * ";
+      case Type::Div:
+        return " / ";
+      case Type::Exp:
+        return " ^ ";
+    }
+  }
 };
+
+// class ExpressionMul : public Instruction {
+//  public:
+//   TypeInstruction getInstructionType() override { return ExpressionMulT; }
+//   std::string toString() override { return "ExpressionMul"; }
+// };
+
+// class ExpressionExp : public Instruction {
+//  public:
+//   TypeInstruction getInstructionType() override { return ExpressionExpT; }
+//   std::string toString() override { return "ExpressionExp"; }
+// };
 
 class CompareExpr : public Instruction {
  public:
@@ -179,10 +230,36 @@ class CompareExpr : public Instruction {
 
   TypeInstruction getInstructionType() override { return CompareExprT; }
 
+  std::string toString() override {
+    std::string out = leftExpr->toString();
+    out += operatorToString();
+    if (rightExpr != nullptr) out += rightExpr->toString();
+    return out;
+  }
+
  private:
   Type type;
   std::unique_ptr<Expression> leftExpr;
   std::unique_ptr<Expression> rightExpr;
+
+  std::string operatorToString() {
+    switch (type) {
+      case Type::NoComp:
+        return "";
+      case Type::Greater:
+        return " > ";
+      case Type::GreaterEq:
+        return " >= ";
+      case Type::Less:
+        return " < ";
+      case Type::LessEq:
+        return " <= ";
+      case Type::Different:
+        return " != ";
+      case Type::Equal:
+        return " == ";
+    }
+  }
 };
 
 class AssignExpr : public Instruction {
