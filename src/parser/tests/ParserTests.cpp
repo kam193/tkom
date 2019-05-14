@@ -34,8 +34,23 @@ BOOST_AUTO_TEST_CASE(test_function_def) {
   assertExpectedCode(program);
 }
 
-BOOST_AUTO_TEST_CASE(test_variable_assign) {
-  std::string program = "variable = 15\nsecond = \"aaaaa\"";
+BOOST_AUTO_TEST_CASE(test_basic_variable_assign) {
+  std::string program = "variable = False\nsecond -= \"aa\"\nthird += 15";
+  assertExpectedCode(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_function_calls) {
+  std::string program = "func1()\nfunc2(a, b, 20 * 3, func1())";
+  assertExpectedCode(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_assign_with_expression) {
+  std::string program = "var = 15 * 7 + 24 * 3 ^ 7";
+  assertExpectedCode(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_while_loop) {
+  std::string program = "while(i < 17):\n  func(i * 24)\n  i += 1\n  continue";
   assertExpectedCode(program);
 }
 

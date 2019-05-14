@@ -80,7 +80,7 @@ std::unique_ptr<CodeBlock> Parser::parseCodeBlock(int width, bool inFunc,
     } else if ((instrPtr = tryParseAssignExpr()) != nullptr) {
       code->instructions.push_back(std::move(instrPtr));
     } else if ((instrPtr = tryParseExpr()) != nullptr) {
-      code->instructions.push_front(std::move(instrPtr));
+      code->instructions.push_back(std::move(instrPtr));
     } else if ((instrPtr = tryParseIfExpr(width, inFunc, inLoop)) != nullptr) {
       code->instructions.push_back(std::move(instrPtr));
       // Support for else: try, check if previous is if, if is -> append else
@@ -93,7 +93,7 @@ std::unique_ptr<CodeBlock> Parser::parseCodeBlock(int width, bool inFunc,
     if (currentToken.getType() == ttype::eof) break;
     if (currentToken.getType() == ttype::nl) getNextToken(ttype::space);
     if (currentToken.getType() != ttype::space)
-      throwError("Enexpected token inside code block.");
+      throwError("Unexpected token inside code block.");
     currentSpace = currentToken.getInteger();
   }
 
@@ -266,11 +266,11 @@ std::unique_ptr<FunctionCall> Parser::tryParseFuncCall() {
 
   getNextToken();
   while (currentToken.getType() != ttype::closeBracket) {
-    if ((argumentPtr = tryParseArgument()) != nullptr)
+    if ((argumentPtr = tryParseExpr()) != nullptr)
       funcPtr->addArgument(std::move(argumentPtr));
-    else if (currentToken.getType() != ttype::comma)
+    else if (!checkTokenType(ttype::comma))
       throwError("Unexpected token inside function call arguments");
-    getNextToken();
+    if (checkTokenType(ttype::comma)) getNextToken();
   }
   getNextToken();
   return funcPtr;

@@ -100,7 +100,7 @@ class Constant : public Instruction {
   explicit Constant(bool value) : type(Type::Bool), boolValue(value) {}
   explicit Constant(std::int64_t value) : type(Type::Int), intValue(value) {}
   explicit Constant(double value) : type(Type::Real), realValue(value) {}
-  explicit Constant(std::string value) : type(Type::Real), strValue(value) {}
+  explicit Constant(std::string value) : type(Type::Text), strValue(value) {}
   explicit Constant(std::unique_ptr<std::vector<Variable>> values)
       : type(Type::List), listValue(std::move(values)) {}  // shared ptr?
 
@@ -117,7 +117,7 @@ class Constant : public Instruction {
       case Type::Real:
         return std::to_string(realValue);
       case Type::Text:
-        return strValue;
+        return "\"" + strValue + "\"";
       // case Type::List:
       default:
         throw std::exception();
@@ -148,14 +148,15 @@ class FunctionCall : public Instruction {
  public:
   explicit FunctionCall(std::string name) : name(name) {}
   void addArgument(std::unique_ptr<Instruction> arg) {
-    args->push_back(std::move(arg));
+    args.push_back(std::move(arg));
   }
 
   TypeInstruction getInstructionType() override { return FunctionCallT; }
+  std::string toString() override { return "FuncCall"; }
 
  private:
   std::string name;
-  std::unique_ptr<std::vector<std::unique_ptr<Instruction>>> args;
+  std::vector<std::unique_ptr<Instruction>> args;
 };
 
 class Return : public Instruction {
@@ -269,6 +270,17 @@ class AssignExpr : public Instruction {
       : type(type), variableName(name), expression(std::move(expr)) {}
 
   TypeInstruction getInstructionType() override { return AssignExprT; }
+  std::string toString() override {
+    std::string out = variableName;
+    if (type == Type::Assign)
+      out += " = ";
+    else if (type == Type::AddAssign)
+      out += " += ";
+    else
+      out += " -= ";
+    out += expression->toString();
+    return out;
+  }
 
  private:
   Type type;
