@@ -73,10 +73,10 @@ std::unique_ptr<CodeBlock> Parser::parseCodeBlock(int width, bool inFunc,
       break;
     } else if (inLoop && currentToken.getType() == ttype::continueT) {
       code->instructions.push_back(std::make_unique<Continue>());
-      getNextToken(ttype::nl);
+      getNextToken(InstrEnd);
     } else if (inLoop && currentToken.getType() == ttype::breakT) {
       code->instructions.push_back(std::make_unique<Break>());
-      getNextToken(ttype::nl);
+      getNextToken(InstrEnd);
     } else if ((instrPtr = tryParseAssignExpr()) != nullptr) {
       code->instructions.push_back(std::move(instrPtr));
     } else if ((instrPtr = tryParseExpr()) != nullptr) {

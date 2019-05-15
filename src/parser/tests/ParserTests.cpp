@@ -50,8 +50,19 @@ BOOST_AUTO_TEST_CASE(test_assign_with_expression) {
 }
 
 BOOST_AUTO_TEST_CASE(test_while_loop) {
-  std::string program = "while(i < 17):\n  func(i * 24)\n  i += 1\n  continue";
+  std::string program = "while i < 17:\n  func(i * 24)\n  i += 1\n  continue";
   assertExpectedCode(program);
 }
+
+// BOOST_AUTO_TEST_CASE(test_for_loop) {
+//   std::string program = "for i in var:\n  do_sth()\nfor e in fun():\n  break";
+//   assertExpectedCode(program);
+// }
+
+// BOOST_AUTO_TEST_CASE(test_list_and_slice) {
+//   std::string program =
+//       "val = [12, b, run()]\nv2 = val[:]\nv3 = val[1]\nv4 = fun()[-3]";
+//   assertExpectedCode(program);
+// }
 
 BOOST_AUTO_TEST_SUITE_END()

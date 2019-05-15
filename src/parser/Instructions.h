@@ -152,7 +152,15 @@ class FunctionCall : public Instruction {
   }
 
   TypeInstruction getInstructionType() override { return FunctionCallT; }
-  std::string toString() override { return "FuncCall"; }
+  std::string toString() override {
+    std::string out = name + "(";
+    for (int i = 0; i < args.size(); ++i) {
+      out += args[i]->toString();
+      if (i != args.size() - 1) out += ", ";
+    }
+    out += ")";
+    return out;
+  }
 
  private:
   std::string name;
@@ -291,11 +299,13 @@ class AssignExpr : public Instruction {
 class Continue : public Instruction {
  public:
   TypeInstruction getInstructionType() override { return ContinueT; }
+  std::string toString() override { return "continue"; }
 };
 
 class Break : public Instruction {
  public:
   TypeInstruction getInstructionType() override { return BreakT; }
+  std::string toString() override { return "break"; }
 };
 
 class If : public Instruction {
@@ -333,6 +343,11 @@ class While : public Instruction {
   While(std::unique_ptr<CompareExpr> compare, std::unique_ptr<CodeBlock> code)
       : compare(std::move(compare)), code(std::move(code)) {}
   TypeInstruction getInstructionType() override { return WhileT; }
+  std::string toString() override {
+    std::string out = "while " + compare->toString() += ":\n";
+    out += code->toString();
+    return out;
+  }
 
  private:
   std::unique_ptr<CompareExpr> compare;

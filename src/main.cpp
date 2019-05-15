@@ -10,7 +10,7 @@
 #include "scanner/Scanner.h"
 
 int main() {
-  std::string program = "func2(a, b, 20 * 3, func1())\n";
+  std::string program = "while i < 17:\n  func(i * 24)\n  i += 1\n  continue\n";
   std::cout << program << std::endl;
   std::stringstream input(program);
 
@@ -22,9 +22,9 @@ int main() {
 
   // Scanner scan(input);
 
-  // std::cout << " LINE | COL | TOKEN | STR_VALUE | DOUBLE_VALUE |
-  // INT_VALUE\n"; Token token; while ((token = scan.getNextToken()).getType()
-  // != Token::Type::eof) {
+  // std::cout << " LINE | COL | TOKEN | STR_VALUE | DOUBLE_VALUE | INT_VALUE\n";
+  // Token token;
+  // while ((token = scan.getNextToken()).getType() != Token::Type::eof) {
   //   std::cout << std::setw(5) << token.getLine() << " | " << std::setw(3)
   //             << token.getColumn() << " | " << std::setw(5)
   //             << static_cast<std::underlying_type<Token::Type>::type>(
