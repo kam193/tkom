@@ -54,15 +54,35 @@ BOOST_AUTO_TEST_CASE(test_while_loop) {
   assertExpectedCode(program);
 }
 
-// BOOST_AUTO_TEST_CASE(test_for_loop) {
-//   std::string program = "for i in var:\n  do_sth()\nfor e in fun():\n  break";
-//   assertExpectedCode(program);
-// }
+BOOST_AUTO_TEST_CASE(test_for_loop) {
+  std::string program = "for i in var:\n  do_sth()\nfor e in fun():\n  break";
+  assertExpectedCode(program);
+}
 
-// BOOST_AUTO_TEST_CASE(test_list_and_slice) {
-//   std::string program =
-//       "val = [12, b, run()]\nv2 = val[:]\nv3 = val[1]\nv4 = fun()[-3]";
-//   assertExpectedCode(program);
-// }
+BOOST_AUTO_TEST_CASE(test_list_and_slice) {
+  std::string program =
+      "val = [12, b, run()]\nv2 = val[:]\nv3 = val[1]\nv4 = fun()[:3]";
+  std::string expected =
+      "val = [12, b, run()]\nv2 = val[0:]\nv3 = val[1]\nv4 = fun()[0:3]";
+  assertExpectedCode(program, expected);
+}
+
+BOOST_AUTO_TEST_CASE(test_list_complex) {
+  std::string program =
+      "val = [[1, 2, 3], "
+      "15, run(23, \"a\"), "
+      "9 * 23, a * 5 + rand(), "
+      "[a, b][0:2]][5]";
+  assertExpectedCode(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_example_program) {
+  std::string program =
+      "def function_name(arg1):\n"
+      "  x = arg1 / 3\n"
+      "  return x + arg1\n"
+      "function_name(23)";
+  assertExpectedCode(program);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

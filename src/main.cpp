@@ -10,16 +10,17 @@
 #include "scanner/Scanner.h"
 
 int main() {
-  std::string program = "while i < 17:\n  func(i * 24)\n  i += 1\n  continue\n";
-  std::cout << program << std::endl;
-  std::stringstream input(program);
+  // std::string program = "v3 = val[1]";
+  // std::cout << program << std::endl;
+  // std::stringstream input(program);
 
-  Parser parser(input);
+  Parser parser(std::cin);
   auto parsed = parser.parse();
 
-  std::cout << "Parsing end" << std::endl;
+  std::cout << "PARSING END" << std::endl;
   std::cout << parsed.codeToString();
 
+  // input.seekg(0);
   // Scanner scan(input);
 
   // std::cout << " LINE | COL | TOKEN | STR_VALUE | DOUBLE_VALUE | INT_VALUE\n";

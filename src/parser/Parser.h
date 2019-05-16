@@ -23,7 +23,8 @@ enum ParseState {
   ReturnState,
   InstrEnd,
   OperatorsAddSub,
-  OperatorsMulDiv
+  OperatorsMulDiv,
+  SliceStart
 };  // rename: set of expected tokens
 
 class Parser {
@@ -38,7 +39,9 @@ class Parser {
   Token savedToken;
   bool tokenRestored = false;
 
-  bool getNextToken(ParseState state, bool no_except = false); // Refactor: instead no_except: get & check
+  bool getNextToken(
+      ParseState state,
+      bool no_except = false);  // Refactor: instead no_except: get & check
   bool getNextToken(ttype expectedType, bool no_except = false);
   bool getNextToken();
   void restoreToken();
@@ -50,13 +53,13 @@ class Parser {
                                             bool inLoop = false);
   std::unique_ptr<Return> parseReturn();
 
-  std::unique_ptr<Instruction> tryParseArgument();  // popr. slice
-  std::unique_ptr<Slice> tryParseSlice();
+  std::unique_ptr<Instruction> tryParseArgument();
   std::unique_ptr<FunctionCall> tryParseFuncCall();
-  std::unique_ptr<Constant> tryParseValue();  // wywalic
   std::unique_ptr<Constant> tryParseConstant();
-  // tryParseSliced ???
-  std::unique_ptr<Constant> tryParseList() { return nullptr; }  // td
+  std::unique_ptr<Slice> tryParseSliceSt();
+  std::unique_ptr<Instruction> tryParseSlicedValue();
+  std::unique_ptr<Instruction> tryParseSlice();
+  std::unique_ptr<Constant> tryParseList();
 
   std::unique_ptr<CompareExpr> tryParseCmpExpr(
       ttype expectedEnd = ttype::colon);

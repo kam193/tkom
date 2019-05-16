@@ -72,8 +72,6 @@ class Function : public Instruction {
     out += code->toString();
     return out;
   }
-  // evaluate (dziedziczone) -> dodaje do listy funkcji
-  // call -> woła funkcję
 };
 
 class Variable : public Instruction {
@@ -94,15 +92,15 @@ class Constant : public Instruction {
   double realValue;
   bool boolValue;
   std::string strValue;
-  std::unique_ptr<std::vector<Variable>> listValue;  // fix!
+  std::vector<std::unique_ptr<Instruction>> listElements;
 
   explicit Constant(Type _type) : type(_type) {}
   explicit Constant(bool value) : type(Type::Bool), boolValue(value) {}
   explicit Constant(std::int64_t value) : type(Type::Int), intValue(value) {}
   explicit Constant(double value) : type(Type::Real), realValue(value) {}
   explicit Constant(std::string value) : type(Type::Text), strValue(value) {}
-  explicit Constant(std::unique_ptr<std::vector<Variable>> values)
-      : type(Type::List), listValue(std::move(values)) {}  // shared ptr?
+  explicit Constant(std::vector<std::unique_ptr<Instruction>> &&elements)
+      : type(Type::List), listElements(std::move(elements)) {}
 
   TypeInstruction getInstructionType() override { return ConstantT; }
 
@@ -118,10 +116,22 @@ class Constant : public Instruction {
         return std::to_string(realValue);
       case Type::Text:
         return "\"" + strValue + "\"";
-      // case Type::List:
+      case Type::List:
+        return listToString();
       default:
         throw std::exception();
     }
+  }
+
+ private:
+  std::string listToString() {
+    std::string out = "[";
+    for (int i = 0; i < listElements.size(); ++i) {
+      out += listElements[i]->toString();
+      if (i != listElements.size() - 1) out += ", ";
+    }
+    out += "]";
+    return out;
   }
 };
 
@@ -129,13 +139,21 @@ class Slice : public Instruction {
  public:
   enum SliceType { Start, StartToEnd, StartToSlice };
   Slice(SliceType type, int start, int end)
-      : type(type), start(Start), end(end) {}
+      : type(type), start(start), end(end) {}
 
   void setSource(std::unique_ptr<Instruction> _source) {
     source = std::move(_source);
   }
 
   TypeInstruction getInstructionType() override { return SliceT; }
+  std::string toString() override {
+    std::string out = source->toString() += "[";
+    out += std::to_string(start);
+    if (type != SliceType::Start) out += ":";
+    if (type == SliceType::StartToSlice) out += std::to_string(end);
+    out += "]";
+    return out;
+  }
 
  private:
   SliceType type;
@@ -215,18 +233,6 @@ class Expression : public Instruction {
     }
   }
 };
-
-// class ExpressionMul : public Instruction {
-//  public:
-//   TypeInstruction getInstructionType() override { return ExpressionMulT; }
-//   std::string toString() override { return "ExpressionMul"; }
-// };
-
-// class ExpressionExp : public Instruction {
-//  public:
-//   TypeInstruction getInstructionType() override { return ExpressionExpT; }
-//   std::string toString() override { return "ExpressionExp"; }
-// };
 
 class CompareExpr : public Instruction {
  public:
@@ -331,11 +337,20 @@ class If : public Instruction {
 
 class For : public Instruction {
  public:
+  For(std::string iterator, std::unique_ptr<Instruction> range,
+      std::unique_ptr<CodeBlock> code)
+      : iterator(iterator), range(std::move(range)), code(std::move(code)) {}
   TypeInstruction getInstructionType() override { return ForT; }
+  std::string toString() override {
+    std::string out = "for " + iterator + " in " + range->toString() + ":\n";
+    out += code->toString();
+    return out;
+  }
 
  private:
-  std::string varName;
-  std::unique_ptr<Slice> slice;
+  std::string iterator;
+  std::unique_ptr<Instruction> range;
+  std::unique_ptr<CodeBlock> code;
 };
 
 class While : public Instruction {
@@ -353,10 +368,5 @@ class While : public Instruction {
   std::unique_ptr<CompareExpr> compare;
   std::unique_ptr<CodeBlock> code;
 };
-
-// class NoneConst : public Instruction {
-//  public:
-//   int value;
-// };
 
 #endif  // SRC_PARSER_INSTRUCTIONS_H_
