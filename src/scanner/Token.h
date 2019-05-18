@@ -65,11 +65,11 @@ class Token {
 
   std::int64_t getInteger() { return numValue.integer; }
   double getReal() { return numValue.real; }
-  std::string getString() { return strValue; }
+  std::string getString() const { return strValue; }
   Type getType() { return type; }
 
-  int getLine() { return line; }
-  int getColumn() { return column; }
+  int getLine() const { return line; }
+  int getColumn() const { return column; }
 
  private:
   Type type = Type::NaT;

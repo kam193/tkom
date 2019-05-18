@@ -3,6 +3,7 @@
 #ifndef SRC_PARSER_PARSER_H_
 #define SRC_PARSER_PARSER_H_
 
+#include <iostream>
 #include <istream>
 #include <list>
 #include <memory>
@@ -13,11 +14,12 @@
 #include "../scanner/Scanner.h"
 #include "../scanner/Token.h"
 #include "Instructions.h"
+#include "ParserExceptions.h"
 #include "Program.h"
 
 using ttype = Token::Type;
 
-enum ParseState {
+enum ExpectedTokens {
   InstructionState,
   ParamsDef,
   ReturnState,
@@ -25,7 +27,7 @@ enum ParseState {
   OperatorsAddSub,
   OperatorsMulDiv,
   SliceStart
-};  // rename: set of expected tokens
+};
 
 class Parser {
  public:
@@ -39,13 +41,11 @@ class Parser {
   Token savedToken;
   bool tokenRestored = false;
 
-  bool getNextToken(
-      ParseState state,
-      bool no_except = false);  // Refactor: instead no_except: get & check
-  bool getNextToken(ttype expectedType, bool no_except = false);
+  bool getNextToken(ExpectedTokens state);
+  bool getNextToken(ttype expectedType);
   bool getNextToken();
   void restoreToken();
-  bool checkTokenType(ParseState state);
+  bool checkTokenType(ExpectedTokens state);
   bool checkTokenType(ttype expectedType);
 
   std::unique_ptr<Instruction> tryParseFunctionDef(int width);
@@ -68,12 +68,10 @@ class Parser {
   std::unique_ptr<Expression> tryParseExprExp();
   std::unique_ptr<AssignExpr> tryParseAssignExpr();
   std::unique_ptr<If> tryParseIfExpr(int width, bool inFunction, bool inLoop);
-  std::unique_ptr<For> tryParseForLoop(int width, bool inFunction);  // td
+  std::unique_ptr<For> tryParseForLoop(int width, bool inFunction);
   std::unique_ptr<While> tryParseWhileLoop(int width, bool inFunction);
 
-  void throwError(std::string msg);
-
-  static std::unordered_map<ParseState, std::set<ttype>, std::hash<int>>
+  static std::unordered_map<ExpectedTokens, std::set<ttype>, std::hash<int>>
       expectedTokens;
 };
 

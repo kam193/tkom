@@ -23,6 +23,13 @@ void assertExpectedCode(const std::string &code) {
   assertExpectedCode(code, code);
 }
 
+template <typename ExpectedException>
+void assertExpectedException(const std::string &code) {
+  std::stringstream input(code);
+  Parser parser(input);
+  BOOST_CHECK_THROW(parser.parse(), ExpectedException);
+}
+
 BOOST_AUTO_TEST_CASE(test_dumm_function_def) {
   std::string program = "def name(a, b, c):\n  return";
   std::string expected = "def name(a, b, c):\n  return None";
@@ -83,6 +90,56 @@ BOOST_AUTO_TEST_CASE(test_example_program) {
       "  return x + arg1\n"
       "function_name(23)";
   assertExpectedCode(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_unexpected_token) {
+  std::string program = "?";
+  assertExpectedException<UnexpectedToken>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_no_expected_codeblock) {
+  std::string program = "def fun():\n";
+  assertExpectedException<ExpectedCodeBlock>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_use_of_return) {
+  std::string program = "def fun():\n  return()\n";
+  assertExpectedException<UnexpectedAfterReturn>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_expression) {
+  std::string program = "a = 44 *";
+  assertExpectedException<IncorrectExpression>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_compare_no_op) {
+  std::string program = "if a b:";
+  assertExpectedException<InvalidCompareExpression>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_funccall) {
+  std::string program = "fun(ab if)";
+  assertExpectedException<InvalidFunctionCall>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_slice) {
+  std::string program = "a = t[1";
+  assertExpectedException<NoEndOfSlice>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_list_element) {
+  std::string program = "a = [1, +]";
+  assertExpectedException<InvalidListElement>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_assign) {
+  std::string program = "a = ";
+  assertExpectedException<InvalidAssign>(program);
+}
+
+BOOST_AUTO_TEST_CASE(test_invalid_for) {
+  std::string program = "for e in:";
+  assertExpectedException<InvalidForLoop>(program);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
