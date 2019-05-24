@@ -144,51 +144,54 @@ std::unique_ptr<Constant> Parser::tryParseConstant() {
 std::unique_ptr<Expression> Parser::tryParseExpr() {
   auto leftMul = tryParseExprMul();
   if (leftMul == nullptr) return nullptr;
+  auto expr = std::make_unique<Expression>();
+  expr->setArgument(std::move(leftMul));
 
-  if (checkTokenType(OperatorsAddSub)) {
+  while (checkTokenType(OperatorsAddSub)) {
     auto type = currentToken.getType() == ttype::add ? Expression::Type::Add
                                                      : Expression::Type::Sub;
+    expr->setType(type);
     getNextToken();
     auto rightMul = tryParseExprMul();
     if (rightMul == nullptr) throw IncorrectExpression(currentToken);
-
-    return std::make_unique<Expression>(std::move(leftMul), type,
-                                        std::move(rightMul));
+    expr->setArgument(std::move(rightMul));
   }
-  return std::make_unique<Expression>(std::move(leftMul));
+  return std::move(expr);
 }
 
 std::unique_ptr<Expression> Parser::tryParseExprMul() {
   auto left = tryParseExprExp();
   if (left == nullptr) return nullptr;
+  auto expr = std::make_unique<Expression>();
+  expr->setArgument(std::move(left));
 
-  if (checkTokenType(OperatorsMulDiv)) {
+  while (checkTokenType(OperatorsMulDiv)) {
     auto type = currentToken.getType() == ttype::multipOp
                     ? Expression::Type::Mul
                     : Expression::Type::Div;
+    expr->setType(type);
     getNextToken();
     auto right = tryParseExprExp();
     if (right == nullptr) throw IncorrectExpression(currentToken);
-
-    return std::make_unique<Expression>(std::move(left), type,
-                                        std::move(right));
+    expr->setArgument(std::move(right));
   }
-  return std::make_unique<Expression>(std::move(left));
+  return std::move(expr);
 }
 
 std::unique_ptr<Expression> Parser::tryParseExprExp() {
   auto left = tryParseArgument();
   if (left == nullptr) return nullptr;
+  auto expr = std::make_unique<Expression>();
+  expr->setArgument(std::move(left));
 
-  if (checkTokenType(ttype::expOp)) {
+  while (checkTokenType(ttype::expOp)) {
+    expr->setType(Expression::Type::Exp);
     getNextToken();
     auto right = tryParseArgument();
     if (right == nullptr) throw IncorrectExpression(currentToken);
-
-    return std::make_unique<Expression>(std::move(left), Expression::Type::Exp,
-                                        std::move(right));
+    expr->setArgument(std::move(right));
   }
-  return std::make_unique<Expression>(std::move(left));
+  return std::move(expr);
 }
 
 std::unique_ptr<CompareExpr> Parser::tryParseCmpExpr(ttype expectedEnd) {

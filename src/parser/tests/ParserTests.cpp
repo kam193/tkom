@@ -56,6 +56,14 @@ BOOST_AUTO_TEST_CASE(test_assign_with_expression) {
   assertExpectedCode(program);
 }
 
+BOOST_AUTO_TEST_CASE(test_expression_multiple_times) {
+  std::string program =
+      "var = 15 * 5 * 4 / 3\n"
+      "var = 1 + 3 + 4 - 2 - 8\n"
+      "var = 1 ^ 2 ^ 2 ^ 2";
+  assertExpectedCode(program);
+}
+
 BOOST_AUTO_TEST_CASE(test_while_loop) {
   std::string program = "while i < 17:\n  func(i * 24)\n  i += 1\n  continue";
   assertExpectedCode(program);

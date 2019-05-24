@@ -196,28 +196,29 @@ class Expression : public Instruction {
  public:
   enum Type { None, Add, Sub, Mul, Div, Exp };
 
-  explicit Expression(std::unique_ptr<Instruction> left)
-      : leftExpr(std::move(left)), type(Type::None) {}
-  Expression(std::unique_ptr<Instruction> left, Type type,
-             std::unique_ptr<Instruction> right)
-      : leftExpr(std::move(left)), type(type), rightExpr(std::move(right)) {}
+  Expression() {}
 
   TypeInstruction getInstructionType() override { return ExpressionAddT; }
   std::string toString() override {
-    std::string out = leftExpr->toString();
-    if (type != Type::None) {
-      out += typeToString();
-      out += rightExpr->toString();
+    std::string out = "";
+    for (int i = 0; i < args.size(); ++i) {
+      if (i != 0) out += typeToString(types[i - 1]);
+      out += args[i]->toString();
     }
     return out;
   }
 
+  void setArgument(std::unique_ptr<Instruction> arg) {
+    args.push_back(std::move(arg));
+  }
+  void setType(Type type) { types.push_back(type); }
+
  private:
   Type type;
-  std::unique_ptr<Instruction> leftExpr;
-  std::unique_ptr<Instruction> rightExpr = nullptr;
-  std::string typeToString() {
-    switch (type) {
+  std::vector<Type> types;
+  std::vector<std::unique_ptr<Instruction>> args;
+  std::string typeToString(Type _type) {
+    switch (_type) {
       case Type::None:
         return "";
       case Type::Add:
