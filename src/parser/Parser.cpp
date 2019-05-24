@@ -19,15 +19,13 @@ Program Parser::parse() {
 std::unique_ptr<Instruction> Parser::tryParseFunctionDef(int width) {
   if (currentToken.getType() != ttype::def) return nullptr;
 
-  auto func = std::make_unique<Function>();
-
   getNextToken(ttype::identifier);
-  func->name = currentToken.getString();
+  auto func = std::make_unique<Function>(currentToken.getString());
   getNextToken(ttype::openBracket);
 
   while (getNextToken(ParamsDef)) {
     if (currentToken.getType() == ttype::identifier)
-      func->argumentNames.push_back(currentToken.getString());
+      func->addArgument(currentToken.getString());
     else if (currentToken.getType() == ttype::closeBracket)
       break;
   }
@@ -36,13 +34,14 @@ std::unique_ptr<Instruction> Parser::tryParseFunctionDef(int width) {
   getNextToken(ttype::nl);
   getNextToken(ttype::space);
 
-  if (currentToken.getInteger() > width)
-    func->code = parseCodeBlock(currentToken.getInteger(), true);
-  else
+  if (currentToken.getInteger() > width) {
+    auto codeBlock = parseCodeBlock(currentToken.getInteger(), true);
+    func->setCode(std::move(codeBlock));
+  } else {
     throw ExpectedCodeBlock(currentToken);
+  }
 
-  if (func->code->instructions.size() <= 0)
-    throw ExpectedCodeBlock(currentToken);
+  if (func->empty()) throw ExpectedCodeBlock(currentToken);
 
   return func;
 }
@@ -58,27 +57,27 @@ std::unique_ptr<CodeBlock> Parser::parseCodeBlock(int width, bool inFunc,
     std::unique_ptr<Instruction> instrPtr;
 
     if ((instrPtr = tryParseFunctionDef(width)) != nullptr) {
-      code->instructions.push_back(std::move(instrPtr));
+      code->addInstruction(std::move(instrPtr));
     } else if (inFunc && currentToken.getType() == ttype::returnT) {
-      code->instructions.push_back(parseReturn());
+      code->addInstruction(parseReturn());
       break;
     } else if (inLoop && currentToken.getType() == ttype::continueT) {
-      code->instructions.push_back(std::make_unique<Continue>());
+      code->addInstruction(std::make_unique<Continue>());
       getNextToken(InstrEnd);
     } else if (inLoop && currentToken.getType() == ttype::breakT) {
-      code->instructions.push_back(std::make_unique<Break>());
+      code->addInstruction(std::make_unique<Break>());
       getNextToken(InstrEnd);
     } else if ((instrPtr = tryParseAssignExpr()) != nullptr) {
-      code->instructions.push_back(std::move(instrPtr));
+      code->addInstruction(std::move(instrPtr));
     } else if ((instrPtr = tryParseExpr()) != nullptr) {
-      code->instructions.push_back(std::move(instrPtr));
+      code->addInstruction(std::move(instrPtr));
     } else if ((instrPtr = tryParseIfExpr(width, inFunc, inLoop)) != nullptr) {
-      code->instructions.push_back(std::move(instrPtr));
+      code->addInstruction(std::move(instrPtr));
       // Support for else: try, check if previous is if, if is -> append else
     } else if ((instrPtr = tryParseWhileLoop(width, inFunc)) != nullptr) {
-      code->instructions.push_back(std::move(instrPtr));
+      code->addInstruction(std::move(instrPtr));
     } else if ((instrPtr = tryParseForLoop(width, inFunc)) != nullptr) {
-      code->instructions.push_back(std::move(instrPtr));
+      code->addInstruction(std::move(instrPtr));
     }
 
     if (currentToken.getType() == ttype::eof) break;
@@ -97,12 +96,12 @@ std::unique_ptr<Return> Parser::parseReturn() {
 
   getNextToken();
   if (checkTokenType(InstrEnd)) {
-    returnInstr->value = std::make_unique<Constant>(Constant::Type::None);
+    returnInstr->setValue(std::make_unique<Constant>(Constant::Type::None));
     getNextToken();
   } else if ((instrPtr = tryParseCmpExpr(ttype::nl)) != nullptr) {
-    returnInstr->value = std::move(instrPtr);
+    returnInstr->setValue(std::move(instrPtr));
   } else if ((instrPtr = tryParseExpr()) != nullptr) {
-    returnInstr->value = std::move(instrPtr);
+    returnInstr->setValue(std::move(instrPtr));
   } else {
     throw UnexpectedAfterReturn(currentToken);
   }
