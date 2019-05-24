@@ -1,7 +1,7 @@
 // Copyright 2019 Kamil Mankowski
 
-#ifndef SRC_PARSER_PROGRAM_H_
-#define SRC_PARSER_PROGRAM_H_
+#ifndef SRC_EXECUTE_PROGRAM_H_
+#define SRC_EXECUTE_PROGRAM_H_
 
 #include <memory>
 #include <string>
@@ -21,4 +21,4 @@ class Program {
   }
 };
 
-#endif  // SRC_PARSER_PROGRAM_H_
+#endif  // SRC_EXECUTE_PROGRAM_H_

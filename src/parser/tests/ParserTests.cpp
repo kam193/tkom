@@ -5,11 +5,6 @@
 #include <boost/test/unit_test.hpp>
 #include "../Parser.h"
 
-namespace tt = boost::test_tools;
-using ttype = Token::Type;
-
-// to do: prepare tests for toString()
-
 BOOST_AUTO_TEST_SUITE(ParserTest)
 
 void assertExpectedCode(const std::string &code, const std::string &expected) {

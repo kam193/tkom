@@ -11,11 +11,11 @@
 #include <string>
 #include <unordered_map>
 
+#include "../execute/Instructions.h"
+#include "../execute/Program.h"
 #include "../scanner/Scanner.h"
 #include "../scanner/Token.h"
-#include "Instructions.h"
 #include "ParserExceptions.h"
-#include "Program.h"
 
 using ttype = Token::Type;
 

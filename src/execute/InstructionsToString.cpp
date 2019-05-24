@@ -24,17 +24,17 @@ std::string Function::toString() {
 
 std::string Constant::toString() {
   switch (type) {
-    case Type::None:
+    case ValueType::None:
       return "None";
-    case Type::Bool:
+    case ValueType::Bool:
       return boolValue ? "True" : "False";
-    case Type::Int:
+    case ValueType::Int:
       return std::to_string(intValue);
-    case Type::Real:
+    case ValueType::Real:
       return std::to_string(realValue);
-    case Type::Text:
+    case ValueType::Text:
       return "\"" + strValue + "\"";
-    case Type::List:
+    case ValueType::List:
       return listToString();
     default:
       throw std::runtime_error("Constant type invalid.");

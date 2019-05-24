@@ -1,7 +1,7 @@
 // Copyright 2019 Kamil Mankowski
 
-#ifndef SRC_PARSER_INSTRUCTIONS_H_
-#define SRC_PARSER_INSTRUCTIONS_H_
+#ifndef SRC_EXECUTE_INSTRUCTIONS_H_
+#define SRC_EXECUTE_INSTRUCTIONS_H_
 
 #include <list>
 #include <memory>
@@ -9,6 +9,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+#include "Value.h"
 
 enum TypeInstruction {
   GeneralT,
@@ -82,22 +84,22 @@ class Variable : public Instruction {
 
 class Constant : public Instruction {
  public:
-  enum class Type { None, Bool, Int, Real, Text, List };
-
-  explicit Constant(Type _type) : type(_type) {}
-  explicit Constant(bool value) : type(Type::Bool), boolValue(value) {}
-  explicit Constant(std::int64_t value) : type(Type::Int), intValue(value) {}
-  explicit Constant(double value) : type(Type::Real), realValue(value) {}
-  explicit Constant(std::string value) : type(Type::Text), strValue(value) {}
+  explicit Constant(ValueType _type) : type(_type) {}
+  explicit Constant(bool value) : type(ValueType::Bool), boolValue(value) {}
+  explicit Constant(std::int64_t value)
+      : type(ValueType::Int), intValue(value) {}
+  explicit Constant(double value) : type(ValueType::Real), realValue(value) {}
+  explicit Constant(std::string value)
+      : type(ValueType::Text), strValue(value) {}
   explicit Constant(std::vector<std::unique_ptr<Instruction>> &&elements)
-      : type(Type::List), listElements(std::move(elements)) {}
+      : type(ValueType::List), listElements(std::move(elements)) {}
 
   TypeInstruction getInstructionType() override { return ConstantT; }
 
   std::string toString() override;
 
  private:
-  Type type;
+  ValueType type;
   std::int64_t intValue;
   double realValue;
   bool boolValue;
@@ -258,4 +260,4 @@ class While : public Instruction {
   std::unique_ptr<CodeBlock> code;
 };
 
-#endif  // SRC_PARSER_INSTRUCTIONS_H_
+#endif  // SRC_EXECUTE_INSTRUCTIONS_H_

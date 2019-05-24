@@ -74,6 +74,8 @@ std::unique_ptr<CodeBlock> Parser::parseCodeBlock(int width, bool inFunc,
     } else if ((instrPtr = tryParseIfExpr(width, inFunc, inLoop)) != nullptr) {
       code->addInstruction(std::move(instrPtr));
       // Support for else: try, check if previous is if, if is -> append else
+      // in loop ignore empty lines (the same indent) and check first non-nl,
+      // non-space token - if not else, restore
     } else if ((instrPtr = tryParseWhileLoop(width, inFunc)) != nullptr) {
       code->addInstruction(std::move(instrPtr));
     } else if ((instrPtr = tryParseForLoop(width, inFunc)) != nullptr) {
@@ -96,7 +98,7 @@ std::unique_ptr<Return> Parser::parseReturn() {
 
   getNextToken();
   if (checkTokenType(InstrEnd)) {
-    returnInstr->setValue(std::make_unique<Constant>(Constant::Type::None));
+    returnInstr->setValue(std::make_unique<Constant>(ValueType::None));
     getNextToken();
   } else if ((instrPtr = tryParseCmpExpr(ttype::nl)) != nullptr) {
     returnInstr->setValue(std::move(instrPtr));
@@ -123,7 +125,7 @@ std::unique_ptr<Constant> Parser::tryParseConstant() {
   std::unique_ptr<Constant> constPtr = nullptr;
 
   if (checkTokenType(ttype::none))
-    constPtr = std::make_unique<Constant>(Constant::Type::None);
+    constPtr = std::make_unique<Constant>(ValueType::None);
   else if (checkTokenType(ttype::trueT))
     constPtr = std::make_unique<Constant>(true);
   else if (checkTokenType(ttype::falseT))
