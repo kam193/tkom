@@ -1,5 +1,5 @@
 SOURCE_CODE=src/scanner/*.cpp src/parser/*.cpp src/execute/*.cpp
-TEST_CODE=src/scanner/tests/*.cpp src/parser/tests/*.cpp src/execute/tests/*.cpp
+TEST_CODE=src/tests_main.cpp src/scanner/tests/*.cpp src/parser/tests/*.cpp src/execute/tests/*.cpp
 MAIN=src/main.cpp
 
 build: test build-notest
