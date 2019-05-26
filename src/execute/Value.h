@@ -13,12 +13,13 @@ enum class ValueType { None, Bool, Int, Real, Text, List };
 
 class Value {
  public:
-  explicit Value(ValueType _type) : type(_type) {}
+  Value() : type(ValueType::None) {}
+  explicit Value(ValueType type) : type(type) {}
   explicit Value(bool value) : type(ValueType::Bool), boolValue(value) {}
   explicit Value(std::int64_t value) : type(ValueType::Int), intValue(value) {}
   explicit Value(double value) : type(ValueType::Real), realValue(value) {}
   explicit Value(std::string value) : type(ValueType::Text), strValue(value) {}
-  explicit Value(std::vector<Value> &elements)
+  explicit Value(std::vector<std::shared_ptr<Value>> &elements)
       : type(ValueType::List), listElements(elements) {}
 
   ValueType getType() { return type; }
@@ -29,7 +30,9 @@ class Value {
   void setReal(double val) { realValue = val; }
   std::string getStr() { return strValue; }
   void setStr(std::string str) { strValue = str; }
-  std::vector<Value> &getListReference() { return listElements; }
+  std::vector<std::shared_ptr<Value>> getList() { return listElements; }
+  void setBool(bool val) { boolValue = val; }
+  bool getBool() { return boolValue; }
 
  private:
   ValueType type;
@@ -37,7 +40,7 @@ class Value {
   double realValue;
   bool boolValue;
   std::string strValue;
-  std::vector<Value> listElements;
+  std::vector<std::shared_ptr<Value>> listElements;
 };
 
 #endif  // SRC_EXECUTE_VALUE_H_

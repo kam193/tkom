@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "Value.h"
+#include "ExecuteExceptions.h"
 
 enum TypeInstruction {
   GeneralT,
@@ -33,10 +34,14 @@ enum TypeInstruction {
   WhileT
 };
 
+class Context;
 class Instruction {
  public:
   virtual TypeInstruction getInstructionType() { return GeneralT; }
   virtual std::string toString() { return "Instruction"; }
+  virtual std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) {
+    return std::make_shared<Value>();
+  }
 };
 
 class CodeBlock : public Instruction {
@@ -77,6 +82,7 @@ class Variable : public Instruction {
   explicit Variable(std::string name) : name(name) {}
   TypeInstruction getInstructionType() override { return VariableT; }
   std::string toString() override { return name; }
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   std::string name;
@@ -95,8 +101,8 @@ class Constant : public Instruction {
       : type(ValueType::List), listElements(std::move(elements)) {}
 
   TypeInstruction getInstructionType() override { return ConstantT; }
-
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   ValueType type;
@@ -259,5 +265,7 @@ class While : public Instruction {
   std::unique_ptr<CompareExpr> compare;
   std::unique_ptr<CodeBlock> code;
 };
+
+#include "Context.h"
 
 #endif  // SRC_EXECUTE_INSTRUCTIONS_H_
