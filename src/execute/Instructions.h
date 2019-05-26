@@ -10,8 +10,8 @@
 #include <utility>
 #include <vector>
 
-#include "Value.h"
 #include "ExecuteExceptions.h"
+#include "Value.h"
 
 enum TypeInstruction {
   GeneralT,
@@ -39,6 +39,7 @@ class Instruction {
  public:
   virtual TypeInstruction getInstructionType() { return GeneralT; }
   virtual std::string toString() { return "Instruction"; }
+  virtual std::string instrName() { return "__UNNAMED_INSTR"; }
   virtual std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) {
     return std::make_shared<Value>();
   }
@@ -53,9 +54,11 @@ class CodeBlock : public Instruction {
 
   TypeInstruction getInstructionType() override { return CodeBlockT; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
-  std::list<std::unique_ptr<Instruction>> instructions;
+  std::vector<std::unique_ptr<Instruction>> instructions;
+  bool isResultToReturn(std::shared_ptr<Value> result);
 };
 
 class Function : public Instruction {
@@ -68,7 +71,7 @@ class Function : public Instruction {
   bool empty() { return code == nullptr || code->empty(); }
 
   TypeInstruction getInstructionType() override { return FunctionT; }
-
+  std::string instrName() override { return name; }
   std::string toString() override;
 
  private:
@@ -153,6 +156,7 @@ class Return : public Instruction {
   void setValue(std::unique_ptr<Instruction> val) { value = std::move(val); }
   TypeInstruction getInstructionType() override { return ReturnT; }
   std::string toString() override { return "return " + value->toString(); }
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   std::unique_ptr<Instruction> value;
@@ -218,12 +222,18 @@ class Continue : public Instruction {
  public:
   TypeInstruction getInstructionType() override { return ContinueT; }
   std::string toString() override { return "continue"; }
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) {
+    return std::make_shared<Value>(ValueType::T_CONTINUE);
+  }
 };
 
 class Break : public Instruction {
  public:
   TypeInstruction getInstructionType() override { return BreakT; }
   std::string toString() override { return "break"; }
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) {
+    return std::make_shared<Value>(ValueType::T_BREAK);
+  }
 };
 
 class If : public Instruction {

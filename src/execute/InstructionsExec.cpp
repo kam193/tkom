@@ -25,7 +25,30 @@ std::shared_ptr<Value> Constant::exec(std::shared_ptr<Context> ctx) {
 
 std::shared_ptr<Value> Variable::exec(std::shared_ptr<Context> ctx) {
   auto val = ctx->getVariableValue(name);
-  if (val == nullptr)
-    throw ReadNotAssignVariable(name);
+  if (val == nullptr) throw ReadNotAssignVariable(name);
   return val;
+}
+
+std::shared_ptr<Value> Return::exec(std::shared_ptr<Context> ctx) {
+  auto retValue = value->exec(ctx);
+  return std::make_shared<Value>(retValue);
+}
+
+std::shared_ptr<Value> CodeBlock::exec(std::shared_ptr<Context> ctx) {
+  for (int i = 0; i < instructions.size(); i++) {
+    if (instructions[i]->getInstructionType() == FunctionT) {
+      auto name = instructions[i]->instrName();
+      ctx->setFunction(name, std::move(instructions[i]));
+      continue;
+    }
+    auto result = instructions[i]->exec(ctx);
+    if (isResultToReturn(result)) return result;
+  }
+  return std::make_shared<Value>(ValueType::None);
+}
+
+bool CodeBlock::isResultToReturn(std::shared_ptr<Value> result) {
+  auto type = result->getType();
+  return type == ValueType::T_BREAK || type == ValueType::T_CONTINUE ||
+         type == ValueType::T_RETURN;
 }

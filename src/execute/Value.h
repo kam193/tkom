@@ -9,11 +9,23 @@
 #include <utility>
 #include <vector>
 
-enum class ValueType { None, Bool, Int, Real, Text, List };
+enum class ValueType {
+  None,
+  Bool,
+  Int,
+  Real,
+  Text,
+  List,
+  T_CONTINUE,
+  T_BREAK,
+  T_RETURN
+};
 
 class Value {
  public:
   Value() : type(ValueType::None) {}
+  explicit Value(std::shared_ptr<Value> val)
+      : type(ValueType::T_RETURN), val_ptr(val) {}
   explicit Value(ValueType type) : type(type) {}
   explicit Value(bool value) : type(ValueType::Bool), boolValue(value) {}
   explicit Value(std::int64_t value) : type(ValueType::Int), intValue(value) {}
@@ -33,6 +45,7 @@ class Value {
   std::vector<std::shared_ptr<Value>> getList() { return listElements; }
   void setBool(bool val) { boolValue = val; }
   bool getBool() { return boolValue; }
+  std::shared_ptr<Value> getValuePtr() { return val_ptr; }
 
  private:
   ValueType type;
@@ -41,6 +54,7 @@ class Value {
   bool boolValue;
   std::string strValue;
   std::vector<std::shared_ptr<Value>> listElements;
+  std::shared_ptr<Value> val_ptr;
 };
 
 #endif  // SRC_EXECUTE_VALUE_H_
