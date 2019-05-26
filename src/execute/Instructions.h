@@ -128,6 +128,7 @@ class Slice : public Instruction {
 
   TypeInstruction getInstructionType() override { return SliceT; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   SliceType type;
@@ -145,6 +146,7 @@ class FunctionCall : public Instruction {
 
   TypeInstruction getInstructionType() override { return FunctionCallT; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   std::string name;

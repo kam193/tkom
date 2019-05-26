@@ -28,6 +28,16 @@ std::unique_ptr<MockInstruction> mock_instr() {
 }
 std::shared_ptr<Context> empty_context() { return std::make_shared<Context>(); }
 
+// [1, 2, 3]
+std::unique_ptr<Constant> get_list_of_ints() {
+  std::vector<std::unique_ptr<Instruction>> elements;
+  elements.push_back(std::make_unique<Constant>(1L));
+  elements.push_back(std::make_unique<Constant>(2L));
+  elements.push_back(std::make_unique<Constant>(3L));
+
+  return std::make_unique<Constant>(std::move(elements));
+}
+
 BOOST_AUTO_TEST_CASE(test_simple_constants_exec_value) {
   Constant none(ValueType::None);
   auto val = none.exec(empty_context());
@@ -192,6 +202,111 @@ BOOST_AUTO_TEST_CASE(test_code_block_declare_func) {
   cb.exec(ctx);
 
   BOOST_TEST(ctx->getFunction(name) != nullptr);
+}
+
+BOOST_AUTO_TEST_CASE(test_slice_get_second_pos) {
+  auto ctx = empty_context();
+  auto baseList = get_list_of_ints();
+
+  Slice slice(Slice::SliceType::Start, 1, 0);  // var[1]
+  slice.setSource(std::move(baseList));
+
+  auto result = slice.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::Int));
+  BOOST_TEST(result->getInt() == 2);
+}
+
+BOOST_AUTO_TEST_CASE(test_slice_from_second_to_end) {
+  auto ctx = empty_context();
+  auto baseList = get_list_of_ints();
+
+  Slice slice(Slice::SliceType::StartToEnd, 1, 0);  // var[1:]
+  slice.setSource(std::move(baseList));
+
+  auto result = slice.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::List));
+  BOOST_TEST(result->getList().size() == 2);
+  BOOST_TEST(result->getList()[0]->getInt() == 2);
+  BOOST_TEST(result->getList()[1]->getInt() == 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_slice_from_pos_to_pos) {
+  auto ctx = empty_context();
+  auto baseList = get_list_of_ints();
+
+  Slice slice(Slice::SliceType::StartToSlice, 0, 2);  // var[0:2] == var[:2]
+  slice.setSource(std::move(baseList));
+
+  auto result = slice.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::List));
+  BOOST_TEST(result->getList().size() == 2);
+  BOOST_TEST(result->getList()[0]->getInt() == 1);
+  BOOST_TEST(result->getList()[1]->getInt() == 2);
+}
+
+BOOST_AUTO_TEST_CASE(test_slice_pos_out_of_range) {
+  auto ctx = empty_context();
+  auto baseList = get_list_of_ints();
+
+  Slice slice(Slice::SliceType::Start, 5, 0);
+  slice.setSource(std::move(baseList));
+
+  BOOST_CHECK_THROW(slice.exec(ctx), OutOfRange);
+}
+
+BOOST_AUTO_TEST_CASE(test_slice_end_out_of_range) {
+  auto ctx = empty_context();
+  auto baseList = get_list_of_ints();
+
+  Slice slice(Slice::SliceType::StartToSlice, 0, 5);
+  slice.setSource(std::move(baseList));
+
+  BOOST_CHECK_THROW(slice.exec(ctx), OutOfRange);
+}
+
+BOOST_AUTO_TEST_CASE(test_slice_not_a_list) {
+  auto ctx = empty_context();
+  auto notlist = mock_instr();
+
+  Slice slice(Slice::SliceType::StartToSlice, 0, 5);
+  slice.setSource(std::move(notlist));
+
+  BOOST_CHECK_THROW(slice.exec(ctx), NotList);
+}
+
+BOOST_AUTO_TEST_CASE(test_function_call) {
+  class TestFunction : public Instruction {
+   public:
+    std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override {
+      BOOST_TEST(ctx->parametersSize() == 2);
+      BOOST_TEST(ctx->getParameter(0)->getInt() == 1);
+      BOOST_TEST(ctx->getParameter(1)->getInt() == 2);
+      return std::make_shared<Value>(std::string{"called"});
+    }
+  };
+  auto ctx = empty_context();
+  std::string name = "func_name";
+  ctx->setFunction(name, std::make_unique<TestFunction>());
+
+  FunctionCall call(name);
+  call.addArgument(std::make_unique<Constant>(1L));
+  call.addArgument(std::make_unique<Constant>(2L));
+
+  BOOST_TEST(ctx->parametersSize() == 0);
+  auto result = call.exec(ctx);
+
+  BOOST_TEST(ctx->parametersSize() == 0);
+  BOOST_TEST(result->getStr() == "called");
+}
+
+BOOST_AUTO_TEST_CASE(test_function_call_not_declared) {
+  auto ctx = empty_context();
+  std::string name = "not_declared";
+  FunctionCall call(name);
+  BOOST_CHECK_THROW(call.exec(ctx), FunctionNotDeclared);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

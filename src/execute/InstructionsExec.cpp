@@ -52,3 +52,34 @@ bool CodeBlock::isResultToReturn(std::shared_ptr<Value> result) {
   return type == ValueType::T_BREAK || type == ValueType::T_CONTINUE ||
          type == ValueType::T_RETURN;
 }
+
+std::shared_ptr<Value> Slice::exec(std::shared_ptr<Context> ctx) {
+  auto sourceValue = source->exec(ctx);
+  if (sourceValue->getType() != ValueType::List)
+    throw NotList(source->instrName());
+
+  if (start < 0 || start > sourceValue->getList().size())
+    throw OutOfRange(start);
+
+  if (type == SliceType::Start) return sourceValue->getList()[start];
+  if (type == SliceType::StartToEnd) end = sourceValue->getList().size();
+  if (end < 0 || end > sourceValue->getList().size()) throw OutOfRange(end);
+
+  std::vector<std::shared_ptr<Value>> resultElements;
+  for (int i = start; i < end; ++i)
+    resultElements.push_back(sourceValue->getList()[i]);
+  return std::make_shared<Value>(resultElements);
+}
+
+std::shared_ptr<Value> FunctionCall::exec(std::shared_ptr<Context> ctx) {
+  auto func = ctx->getFunction(name);
+  if (func == nullptr) throw FunctionNotDeclared(name);
+
+  auto callctx = std::make_shared<Context>(ctx);
+  for (auto& arg : args) {
+    auto argval = arg->exec(ctx);
+    callctx->addParameter(argval);
+  }
+
+  return func->exec(callctx);
+}
