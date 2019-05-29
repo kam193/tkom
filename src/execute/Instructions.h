@@ -3,7 +3,9 @@
 #ifndef SRC_EXECUTE_INSTRUCTIONS_H_
 #define SRC_EXECUTE_INSTRUCTIONS_H_
 
+#include <cmath>
 #include <list>
+#include <map>
 #include <memory>
 #include <regex>
 #include <string>
@@ -177,12 +179,31 @@ class Expression : public Instruction {
     args.push_back(std::move(arg));
   }
   void setType(Type type) { types.push_back(type); }
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
+
+  bool checkCompatibility(ValueType left, ValueType right, Expression::Type op);
+
+  static std::string typeToString(Type _type);
+  static std::shared_ptr<Value> makeExpression(std::shared_ptr<Value> left,
+                                               std::shared_ptr<Value> right,
+                                               Expression::Type op);
 
  private:
   Type type;
   std::vector<Type> types;
   std::vector<std::unique_ptr<Instruction>> args;
-  std::string typeToString(Type _type);
+  static std::map<ValueType, std::map<Expression::Type, std::vector<ValueType>>>
+      allowedOperands;
+
+  static std::shared_ptr<Value> execExprList(std::shared_ptr<Value> list,
+                                             std::shared_ptr<Value> right,
+                                             Type op);
+  static std::shared_ptr<Value> execExprStr(std::shared_ptr<Value> str,
+                                            std::shared_ptr<Value> right,
+                                            Type op);
+  static std::shared_ptr<Value> execExprInt(int64_t left, int64_t right, Type op);
+  static std::shared_ptr<Value> execExprReal(double left, double right,
+                                             Type op);
 };
 
 class CompareExpr : public Instruction {

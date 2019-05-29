@@ -43,6 +43,31 @@ std::unique_ptr<Constant> get_list_of_ints() {
   return std::make_unique<Constant>(std::move(elements));
 }
 
+void test_expr_bad_operands(std::unique_ptr<Constant> (*left_operand)(void),
+                            std::vector<std::unique_ptr<Constant>> bad_operands,
+                            Expression::Type operation) {
+  auto ctx = empty_context();
+  for (int i = 0; i < bad_operands.size(); ++i) {
+    auto left = left_operand();
+    Expression expr;
+    expr.setArgument(std::move(left));
+    expr.setType(operation);
+    expr.setArgument(std::move(bad_operands[i]));
+    BOOST_CHECK_THROW(expr.exec(ctx), OperandsTypesNotCompatible);
+  }
+}
+
+template <typename LeftType, typename RightType>
+std::shared_ptr<Value> exec_expression(LeftType left, RightType right,
+                                       Expression::Type op) {
+  auto ctx = empty_context();
+  Expression expr;
+  expr.setArgument(constant<LeftType>(left));
+  expr.setType(op);
+  expr.setArgument(constant<RightType>(right));
+  return expr.exec(ctx);
+}
+
 BOOST_AUTO_TEST_CASE(test_simple_constants_exec_value) {
   Constant none(ValueType::None);
   auto val = none.exec(empty_context());
@@ -312,6 +337,276 @@ BOOST_AUTO_TEST_CASE(test_function_call_not_declared) {
   std::string name = "not_declared";
   FunctionCall call(name);
   BOOST_CHECK_THROW(call.exec(ctx), FunctionNotDeclared);
+}
+
+BOOST_AUTO_TEST_CASE(test_expr_list_bad_operands_throw) {
+  auto lef_operand_creator = get_list_of_ints;
+
+  std::vector<std::unique_ptr<Constant>> bad_operands;
+  bad_operands.push_back(constant<std::string>("test"));
+  bad_operands.push_back(constant<int64_t>(1));
+  bad_operands.push_back(constant<double>(1.0));
+  bad_operands.push_back(constant<ValueType>(ValueType::None));
+
+  test_expr_bad_operands(lef_operand_creator, std::move(bad_operands),
+                         Expression::Type::Add);
+
+  bad_operands = std::vector<std::unique_ptr<Constant>>();
+  bad_operands.push_back(get_list_of_ints());
+  bad_operands.push_back(constant<std::string>("test"));
+  bad_operands.push_back(constant<int64_t>(1));
+  bad_operands.push_back(constant<double>(1.0));
+  bad_operands.push_back(constant<ValueType>(ValueType::None));
+
+  test_expr_bad_operands(lef_operand_creator, std::move(bad_operands),
+                         Expression::Type::Sub);
+
+  bad_operands = std::vector<std::unique_ptr<Constant>>();
+  bad_operands.push_back(get_list_of_ints());
+  bad_operands.push_back(constant<std::string>("test"));
+  bad_operands.push_back(constant<double>(1.0));
+  bad_operands.push_back(constant<ValueType>(ValueType::None));
+
+  test_expr_bad_operands(lef_operand_creator, std::move(bad_operands),
+                         Expression::Type::Mul);
+
+  bad_operands = std::vector<std::unique_ptr<Constant>>();
+
+  bad_operands.push_back(get_list_of_ints());
+  bad_operands.push_back(constant<std::string>("test"));
+  bad_operands.push_back(constant<int64_t>(1));
+  bad_operands.push_back(constant<double>(1.0));
+  bad_operands.push_back(constant<ValueType>(ValueType::None));
+
+  test_expr_bad_operands(lef_operand_creator, std::move(bad_operands),
+                         Expression::Type::Div);
+}
+
+BOOST_AUTO_TEST_CASE(test_expr_string_bad_operands_throw) {
+  auto lef_operand_creator = [] { return constant<std::string>("test"); };
+
+  std::vector<std::unique_ptr<Constant>> bad_operands;
+  bad_operands.push_back(get_list_of_ints());
+  bad_operands.push_back(constant<int64_t>(1));
+  bad_operands.push_back(constant<double>(1.0));
+  bad_operands.push_back(constant<ValueType>(ValueType::None));
+
+  test_expr_bad_operands(lef_operand_creator, std::move(bad_operands),
+                         Expression::Type::Add);
+
+  bad_operands = std::vector<std::unique_ptr<Constant>>();
+  bad_operands.push_back(get_list_of_ints());
+  bad_operands.push_back(constant<std::string>("test"));
+  bad_operands.push_back(constant<int64_t>(1));
+  bad_operands.push_back(constant<double>(1.0));
+  bad_operands.push_back(constant<ValueType>(ValueType::None));
+
+  test_expr_bad_operands(lef_operand_creator, std::move(bad_operands),
+                         Expression::Type::Sub);
+
+  bad_operands = std::vector<std::unique_ptr<Constant>>();
+  bad_operands.push_back(get_list_of_ints());
+  bad_operands.push_back(constant<std::string>("test"));
+  bad_operands.push_back(constant<double>(1.0));
+  bad_operands.push_back(constant<ValueType>(ValueType::None));
+
+  test_expr_bad_operands(lef_operand_creator, std::move(bad_operands),
+                         Expression::Type::Mul);
+
+  bad_operands = std::vector<std::unique_ptr<Constant>>();
+
+  bad_operands.push_back(get_list_of_ints());
+  bad_operands.push_back(constant<std::string>("test"));
+  bad_operands.push_back(constant<int64_t>(1));
+  bad_operands.push_back(constant<double>(1.0));
+  bad_operands.push_back(constant<ValueType>(ValueType::None));
+
+  test_expr_bad_operands(lef_operand_creator, std::move(bad_operands),
+                         Expression::Type::Div);
+}
+
+BOOST_AUTO_TEST_CASE(test_list_mul) {
+  auto ctx = empty_context();
+  auto list = get_list_of_ints();
+  auto mulCount = constant<int64_t>(3);
+
+  Expression expr;
+  expr.setArgument(std::move(list));
+  expr.setType(Expression::Type::Mul);
+  expr.setArgument(std::move(mulCount));
+  auto result = expr.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::List));
+  BOOST_TEST(result->getList().size() == 9);
+}
+
+BOOST_AUTO_TEST_CASE(test_list_mul_negative) {
+  auto ctx = empty_context();
+  auto list = get_list_of_ints();
+  auto mulCount = constant<int64_t>(-2);
+
+  Expression expr;
+  expr.setArgument(std::move(list));
+  expr.setType(Expression::Type::Mul);
+  expr.setArgument(std::move(mulCount));
+  auto result = expr.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::List));
+  BOOST_TEST(result->getList().size() == 0);
+}
+
+BOOST_AUTO_TEST_CASE(test_str_mul) {
+  auto ctx = empty_context();
+  auto str = constant<std::string>("test");
+  auto mulCount = constant<int64_t>(2);
+
+  Expression expr;
+  expr.setArgument(std::move(str));
+  expr.setType(Expression::Type::Mul);
+  expr.setArgument(std::move(mulCount));
+  auto result = expr.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::Text));
+  BOOST_TEST(result->getStr() == "testtest");
+}
+
+BOOST_AUTO_TEST_CASE(test_str_mul_negative) {
+  auto ctx = empty_context();
+  auto str = constant<std::string>("test");
+  auto mulCount = constant<int64_t>(-1);
+
+  Expression expr;
+  expr.setArgument(std::move(str));
+  expr.setType(Expression::Type::Mul);
+  expr.setArgument(std::move(mulCount));
+  auto result = expr.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::Text));
+  BOOST_TEST(result->getStr() == "");
+}
+
+BOOST_AUTO_TEST_CASE(test_list_add) {
+  auto ctx = empty_context();
+  auto list = get_list_of_ints();
+  auto otherlist = get_list_of_ints();
+
+  Expression expr;
+  expr.setArgument(std::move(list));
+  expr.setType(Expression::Type::Add);
+  expr.setArgument(std::move(otherlist));
+  auto result = expr.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::List));
+  BOOST_TEST(result->getList().size() == 6);
+}
+
+BOOST_AUTO_TEST_CASE(test_str_add) {
+  auto ctx = empty_context();
+  auto str = constant<std::string>("test");
+  auto otherStr = constant<std::string>("second");
+
+  Expression expr;
+  expr.setArgument(std::move(str));
+  expr.setType(Expression::Type::Add);
+  expr.setArgument(std::move(otherStr));
+  auto result = expr.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::Text));
+  BOOST_TEST(result->getStr() == "testsecond");
+}
+
+BOOST_AUTO_TEST_CASE(test_int_int_all_operators) {
+  auto add = exec_expression<int64_t, int64_t>(4, 3, Expression::Type::Add);
+  BOOST_TEST((add->getType() == ValueType::Int));
+  BOOST_TEST(add->getInt() == 7);
+
+  auto sub = exec_expression<int64_t, int64_t>(4, 3, Expression::Type::Sub);
+  BOOST_TEST((sub->getType() == ValueType::Int));
+  BOOST_TEST(sub->getInt() == 1);
+
+  auto mul = exec_expression<int64_t, int64_t>(4, 3, Expression::Type::Mul);
+  BOOST_TEST((mul->getType() == ValueType::Int));
+  BOOST_TEST(mul->getInt() == 12);
+
+  auto div = exec_expression<int64_t, int64_t>(4, 3, Expression::Type::Div);
+  BOOST_TEST((div->getType() == ValueType::Int));
+  BOOST_TEST(div->getInt() == 1);
+
+  auto exp = exec_expression<int64_t, int64_t>(4, 3, Expression::Type::Exp);
+  BOOST_TEST((exp->getType() == ValueType::Int));
+  BOOST_TEST(exp->getInt() == 64);
+}
+
+BOOST_AUTO_TEST_CASE(test_double_double_all_operators) {
+  auto add = exec_expression<double, double>(4.0, 3.0, Expression::Type::Add);
+  BOOST_TEST((add->getType() == ValueType::Real));
+  BOOST_TEST(add->getReal() == 7);
+
+  auto sub = exec_expression<double, double>(4.0, 3.0, Expression::Type::Sub);
+  BOOST_TEST((sub->getType() == ValueType::Real));
+  BOOST_TEST(sub->getReal() == 1.0);
+
+  auto mul = exec_expression<double, double>(4.0, 3.0, Expression::Type::Mul);
+  BOOST_TEST((mul->getType() == ValueType::Real));
+  BOOST_TEST(mul->getReal() == 12.0);
+
+  auto div = exec_expression<double, double>(3.0, 2.0, Expression::Type::Div);
+  BOOST_TEST((div->getType() == ValueType::Real));
+  BOOST_TEST(div->getReal() == 1.5);
+
+  auto exp = exec_expression<double, double>(4.0, 3.0, Expression::Type::Exp);
+  BOOST_TEST((exp->getType() == ValueType::Real));
+  BOOST_TEST(exp->getReal() == 64.0);
+}
+
+BOOST_AUTO_TEST_CASE(test_double_int_all_operators) {
+  auto add = exec_expression<double, int64_t>(4.0, 3, Expression::Type::Add);
+  BOOST_TEST((add->getType() == ValueType::Real));
+  BOOST_TEST(add->getReal() == 7);
+
+  auto sub = exec_expression<int64_t, double>(4, 3.0, Expression::Type::Sub);
+  BOOST_TEST((sub->getType() == ValueType::Real));
+  BOOST_TEST(sub->getReal() == 1.0);
+
+  auto mul = exec_expression<double, int64_t>(4.0, 3, Expression::Type::Mul);
+  BOOST_TEST((mul->getType() == ValueType::Real));
+  BOOST_TEST(mul->getReal() == 12.0);
+
+  auto div = exec_expression<int64_t, double>(3, 2.0, Expression::Type::Div);
+  BOOST_TEST((div->getType() == ValueType::Real));
+  BOOST_TEST(div->getReal() == 1.5);
+
+  auto exp = exec_expression<double, int64_t>(4.0, 3, Expression::Type::Exp);
+  BOOST_TEST((exp->getType() == ValueType::Real));
+  BOOST_TEST(exp->getReal() == 64.0);
+}
+
+BOOST_AUTO_TEST_CASE(test_expression_multiple_op) {
+  auto ctx = empty_context();
+
+  Expression expr;
+  expr.setArgument(constant<int64_t>(2));
+  expr.setType(Expression::Type::Mul);
+  expr.setArgument(constant<int64_t>(4));
+  expr.setType(Expression::Type::Mul);
+  expr.setArgument(constant<int64_t>(3));
+  auto result = expr.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::Int));
+  BOOST_TEST(result->getInt() == 24);
+}
+
+BOOST_AUTO_TEST_CASE(test_expression_multiple_op_throw) {
+  auto ctx = empty_context();
+
+  Expression expr;
+  expr.setArgument(constant<std::string>("test"));
+  expr.setType(Expression::Type::Mul);
+  expr.setArgument(constant<int64_t>(4));
+  expr.setType(Expression::Type::Mul);
+  expr.setArgument(constant<std::string>("bad"));
+
+  BOOST_CHECK_THROW(expr.exec(ctx), OperandsTypesNotCompatible);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

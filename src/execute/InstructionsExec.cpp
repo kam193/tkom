@@ -83,3 +83,140 @@ std::shared_ptr<Value> FunctionCall::exec(std::shared_ptr<Context> ctx) {
 
   return func->exec(callctx);
 }
+
+std::map<ValueType, std::map<Expression::Type, std::vector<ValueType>>>
+    Expression::allowedOperands = {
+        {ValueType::List,
+         std::map<Expression::Type, std::vector<ValueType>>{
+             {Expression::Type::Add, {ValueType::List}},
+             {Expression::Type::Sub, {}},
+             {Expression::Type::Mul, {ValueType::Int}},
+             {Expression::Type::Div, {}},
+             {Expression::Type::Exp, {}},
+         }},
+        {ValueType::Text,
+         std::map<Expression::Type, std::vector<ValueType>>{
+             {Expression::Type::Add, {ValueType::Text}},
+             {Expression::Type::Sub, {}},
+             {Expression::Type::Mul, {ValueType::Int}},
+             {Expression::Type::Div, {}},
+             {Expression::Type::Exp, {}},
+         }},
+        {ValueType::Int,
+         std::map<Expression::Type, std::vector<ValueType>>{
+             {Expression::Type::Add, {ValueType::Int, ValueType::Real}},
+             {Expression::Type::Sub, {ValueType::Int, ValueType::Real}},
+             {Expression::Type::Mul,
+              {ValueType::Int, ValueType::Real, ValueType::List}},
+             {Expression::Type::Div, {ValueType::Int, ValueType::Real}},
+             {Expression::Type::Exp, {ValueType::Int, ValueType::Real}},
+         }},
+        {ValueType::Real,
+         std::map<Expression::Type, std::vector<ValueType>>{
+             {Expression::Type::Add, {ValueType::Int, ValueType::Real}},
+             {Expression::Type::Sub, {ValueType::Int, ValueType::Real}},
+             {Expression::Type::Mul, {ValueType::Int, ValueType::Real}},
+             {Expression::Type::Div, {ValueType::Int, ValueType::Real}},
+             {Expression::Type::Exp, {ValueType::Int, ValueType::Real}},
+         }},
+};
+
+bool Expression::checkCompatibility(ValueType left, ValueType right,
+                                    Expression::Type op) {
+  if (left == ValueType::None) return false;
+  auto findRight = std::find(allowedOperands[left][op].begin(),
+                             allowedOperands[left][op].end(), right);
+  return findRight != allowedOperands[left][op].end();
+}
+
+std::shared_ptr<Value> Expression::execExprList(std::shared_ptr<Value> list,
+                                                std::shared_ptr<Value> right,
+                                                Type op) {
+  std::vector<std::shared_ptr<Value>> elements;
+  if (op == Type::Mul) {
+    for (int i = 0; i < right->getInt(); ++i) {
+      for (auto& elem : list->getList())
+        elements.push_back(std::make_shared<Value>(elem));
+    }
+  } else {
+    for (auto& elem : list->getList())
+      elements.push_back(std::make_shared<Value>(elem));
+    for (auto& elem : right->getList())
+      elements.push_back(std::make_shared<Value>(elem));
+  }
+
+  return std::make_shared<Value>(elements);
+}
+
+std::shared_ptr<Value> Expression::execExprStr(std::shared_ptr<Value> str,
+                                               std::shared_ptr<Value> right,
+                                               Type op) {
+  std::string out = "";
+  if (op == Type::Mul) {
+    for (int i = 0; i < right->getInt(); ++i) out += str->getStr();
+  } else {
+    out = str->getStr() + right->getStr();
+  }
+
+  return std::make_shared<Value>(out);
+}
+
+std::shared_ptr<Value> Expression::execExprInt(int64_t left, int64_t right,
+                                               Type op) {
+  if (op == Expression::Type::Add) return std::make_shared<Value>(left + right);
+  if (op == Expression::Type::Sub) return std::make_shared<Value>(left - right);
+  if (op == Expression::Type::Mul) return std::make_shared<Value>(left * right);
+  if (op == Expression::Type::Div) return std::make_shared<Value>(left / right);
+  return std::make_shared<Value>((int64_t)std::pow(left, right));
+}
+
+std::shared_ptr<Value> Expression::execExprReal(double left, double right,
+                                                Type op) {
+  if (op == Expression::Type::Add) return std::make_shared<Value>(left + right);
+  if (op == Expression::Type::Sub) return std::make_shared<Value>(left - right);
+  if (op == Expression::Type::Mul) return std::make_shared<Value>(left * right);
+  if (op == Expression::Type::Div) return std::make_shared<Value>(left / right);
+  return std::make_shared<Value>(std::pow(left, right));
+}
+
+std::shared_ptr<Value> Expression::makeExpression(std::shared_ptr<Value> left,
+                                                  std::shared_ptr<Value> right,
+                                                  Expression::Type op) {
+  auto leftType = left->getType();
+  auto rightType = right->getType();
+
+  if (leftType == ValueType::List || rightType == ValueType::List) {
+    if (leftType == ValueType::List)
+      return execExprList(left, right, op);
+    else
+      return execExprList(right, left, op);
+  }
+  if (leftType == ValueType::Text || rightType == ValueType::Text) {
+    if (leftType == ValueType::Text)
+      return execExprStr(left, right, op);
+    else
+      return execExprStr(right, left, op);
+  }
+  if (leftType == ValueType::Real || rightType == ValueType::Real) {
+    if (leftType == ValueType::Int) left->setReal(left->getInt());
+    if (rightType == ValueType::Int) right->setReal(right->getInt());
+    return execExprReal(left->getReal(), right->getReal(), op);
+  }
+  return execExprInt(left->getInt(), right->getInt(), op);
+}
+
+std::shared_ptr<Value> Expression::exec(std::shared_ptr<Context> ctx) {
+  auto left = args[0]->exec(ctx);
+  int i = 1;
+  for (auto op : types) {
+    if (i >= args.size()) throw UnexpectedError();
+    auto right = args[i]->exec(ctx);
+
+    if (!checkCompatibility(left->getType(), right->getType(), op))
+      throw OperandsTypesNotCompatible("", "", Expression::typeToString(op));
+
+    left = makeExpression(left, right, op);
+    ++i;
+  }
+  return left;
+}

@@ -43,4 +43,21 @@ class FunctionNotDeclared : public ExecuteExceptionBase {
   }
 };
 
+class OperandsTypesNotCompatible : public ExecuteExceptionBase {
+ public:
+  OperandsTypesNotCompatible(std::string ltyp, std::string rtyp,
+                             std::string expr)
+      : ExecuteExceptionBase() {
+    message += "Operands types are not supported for expression: " + expr;
+    // TODO: types to string
+  }
+};
+
+class UnexpectedError : public ExecuteExceptionBase {
+ public:
+  UnexpectedError() : ExecuteExceptionBase() {
+    message += "Unexpected error occured.";
+  }
+};
+
 #endif  // SRC_EXECUTE_EXECUTEEXCEPTIONS_H_
