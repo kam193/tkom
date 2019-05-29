@@ -220,3 +220,25 @@ std::shared_ptr<Value> Expression::exec(std::shared_ptr<Context> ctx) {
   }
   return left;
 }
+
+std::shared_ptr<Value> AssignExpr::exec(std::shared_ptr<Context> ctx) {
+  if (type == Type::Assign) {
+    auto value = expression->exec(ctx);
+    ctx->setVariable(variableName, value);
+    return value;
+  } else {
+    auto old = ctx->getVariableValue(variableName);
+    if (old == nullptr) throw ReadNotAssignVariable(variableName);
+
+    auto value = expression->exec(ctx);
+    auto op =
+        type == Type::AddAssign ? Expression::Type::Add : Expression::Type::Sub;
+
+    if (!Expression::checkCompatibility(old->getType(), value->getType(), op))
+      throw OperandsTypesNotCompatible("", "", Expression::typeToString(op));
+
+    auto newvalue = Expression::makeExpression(old, value, op);
+    ctx->setVariable(variableName, newvalue);
+    return newvalue;
+  }
+}

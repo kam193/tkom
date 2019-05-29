@@ -181,9 +181,9 @@ class Expression : public Instruction {
   void setType(Type type) { types.push_back(type); }
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
-  bool checkCompatibility(ValueType left, ValueType right, Expression::Type op);
-
   static std::string typeToString(Type _type);
+  static bool checkCompatibility(ValueType left, ValueType right,
+                                 Expression::Type op);
   static std::shared_ptr<Value> makeExpression(std::shared_ptr<Value> left,
                                                std::shared_ptr<Value> right,
                                                Expression::Type op);
@@ -201,7 +201,8 @@ class Expression : public Instruction {
   static std::shared_ptr<Value> execExprStr(std::shared_ptr<Value> str,
                                             std::shared_ptr<Value> right,
                                             Type op);
-  static std::shared_ptr<Value> execExprInt(int64_t left, int64_t right, Type op);
+  static std::shared_ptr<Value> execExprInt(int64_t left, int64_t right,
+                                            Type op);
   static std::shared_ptr<Value> execExprReal(double left, double right,
                                              Type op);
 };
@@ -234,6 +235,7 @@ class AssignExpr : public Instruction {
 
   TypeInstruction getInstructionType() override { return AssignExprT; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   Type type;

@@ -68,6 +68,12 @@ std::shared_ptr<Value> exec_expression(LeftType left, RightType right,
   return expr.exec(ctx);
 }
 
+std::unique_ptr<Expression> expression_const_5() {
+  auto expr = std::make_unique<Expression>();
+  expr->setArgument(constant<int64_t>(5));
+  return std::move(expr);
+}
+
 BOOST_AUTO_TEST_CASE(test_simple_constants_exec_value) {
   Constant none(ValueType::None);
   auto val = none.exec(empty_context());
@@ -606,6 +612,66 @@ BOOST_AUTO_TEST_CASE(test_expression_multiple_op_throw) {
   expr.setType(Expression::Type::Mul);
   expr.setArgument(constant<std::string>("bad"));
 
+  BOOST_CHECK_THROW(expr.exec(ctx), OperandsTypesNotCompatible);
+}
+
+BOOST_AUTO_TEST_CASE(test_new_assign_expr) {
+  auto ctx = empty_context();
+  std::string name = "var";
+
+  AssignExpr expr(AssignExpr::Type::Assign, name, expression_const_5());
+  expr.exec(ctx);
+
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 5);
+}
+
+BOOST_AUTO_TEST_CASE(test_add_assign_expr) {
+  auto ctx = empty_context();
+  std::string name = "var";
+  ctx->setVariable(name, std::make_shared<Value>(3L));
+
+  AssignExpr expr(AssignExpr::Type::AddAssign, name, expression_const_5());
+  expr.exec(ctx);
+
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 8);
+}
+
+BOOST_AUTO_TEST_CASE(test_sub_assign_expr) {
+  auto ctx = empty_context();
+  std::string name = "var";
+  ctx->setVariable(name, std::make_shared<Value>(3L));
+
+  AssignExpr expr(AssignExpr::Type::SubAssign, name, expression_const_5());
+  expr.exec(ctx);
+
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == -2);
+}
+
+BOOST_AUTO_TEST_CASE(test_override_assign_expr) {
+  auto ctx = empty_context();
+  std::string name = "var";
+  ctx->setVariable(name, std::make_shared<Value>(3L));
+
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 3);
+  AssignExpr expr(AssignExpr::Type::Assign, name, expression_const_5());
+  expr.exec(ctx);
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 5);
+}
+
+BOOST_AUTO_TEST_CASE(test_sub_assign_expr_no_var_throw) {
+  auto ctx = empty_context();
+  std::string name = "var";
+
+  AssignExpr expr(AssignExpr::Type::SubAssign, name, expression_const_5());
+  BOOST_CHECK_THROW(expr.exec(ctx), ReadNotAssignVariable);
+}
+
+BOOST_AUTO_TEST_CASE(test_add_assign_expr_incompatibile_throw) {
+  auto ctx = empty_context();
+  std::string name = "var";
+  ctx->setVariable(name, std::make_shared<Value>(true));
+
+  AssignExpr expr(AssignExpr::Type::SubAssign, name, expression_const_5());
   BOOST_CHECK_THROW(expr.exec(ctx), OperandsTypesNotCompatible);
 }
 
