@@ -28,12 +28,17 @@ std::unique_ptr<MockInstruction> mock_instr() {
 }
 std::shared_ptr<Context> empty_context() { return std::make_shared<Context>(); }
 
+template <typename ConstType>
+std::unique_ptr<Constant> constant(ConstType value) {
+  return std::make_unique<Constant>(value);
+}
+
 // [1, 2, 3]
 std::unique_ptr<Constant> get_list_of_ints() {
   std::vector<std::unique_ptr<Instruction>> elements;
-  elements.push_back(std::make_unique<Constant>(1L));
-  elements.push_back(std::make_unique<Constant>(2L));
-  elements.push_back(std::make_unique<Constant>(3L));
+  elements.push_back(constant<int64_t>(1L));
+  elements.push_back(constant<int64_t>(2L));
+  elements.push_back(constant<int64_t>(3L));
 
   return std::make_unique<Constant>(std::move(elements));
 }
@@ -66,9 +71,9 @@ BOOST_AUTO_TEST_CASE(test_simple_constants_exec_value) {
 
 BOOST_AUTO_TEST_CASE(test_list_constant_exec_values) {
   std::vector<std::unique_ptr<Instruction>> elements;
-  elements.push_back(std::make_unique<Constant>(1L));
-  elements.push_back(std::make_unique<Constant>(std::string{"element2"}));
-  elements.push_back(std::make_unique<Constant>(false));
+  elements.push_back(constant<int64_t>(1L));
+  elements.push_back(constant<std::string>("element2"));
+  elements.push_back(constant<bool>(false));
 
   Constant list(std::move(elements));
   auto val = list.exec(empty_context());
@@ -292,8 +297,8 @@ BOOST_AUTO_TEST_CASE(test_function_call) {
   ctx->setFunction(name, std::make_unique<TestFunction>());
 
   FunctionCall call(name);
-  call.addArgument(std::make_unique<Constant>(1L));
-  call.addArgument(std::make_unique<Constant>(2L));
+  call.addArgument(constant<int64_t>(1L));
+  call.addArgument(constant<int64_t>(2L));
 
   BOOST_TEST(ctx->parametersSize() == 0);
   auto result = call.exec(ctx);
