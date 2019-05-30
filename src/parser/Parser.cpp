@@ -10,10 +10,10 @@ std::unordered_map<ExpectedTokens, std::set<ttype>, std::hash<int>>
         {OperatorsMulDiv, {ttype::multipOp, ttype::divOp}},
         {SliceStart, {ttype::integerNumber, ttype::colon}}};
 
-Program Parser::parse() {
+std::unique_ptr<CodeBlock> Parser::parse() {
   getNextToken(ttype::space);
   auto code = parseCodeBlock(currentToken.getInteger());
-  return Program(std::move(code));
+  return std::move(code);
 }
 
 std::unique_ptr<Instruction> Parser::tryParseFunctionDef(int width) {

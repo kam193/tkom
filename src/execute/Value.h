@@ -47,6 +47,8 @@ class Value {
   bool getBool() { return boolValue; }
   std::shared_ptr<Value> getValuePtr() { return val_ptr; }
 
+  std::string toString();
+
  private:
   ValueType type;
   std::int64_t intValue;
@@ -55,6 +57,8 @@ class Value {
   std::string strValue;
   std::vector<std::shared_ptr<Value>> listElements;
   std::shared_ptr<Value> val_ptr;
+
+  std::string listToString();
 };
 
 #endif  // SRC_EXECUTE_VALUE_H_

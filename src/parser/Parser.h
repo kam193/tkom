@@ -12,7 +12,6 @@
 #include <unordered_map>
 
 #include "../execute/Instructions.h"
-#include "../execute/Program.h"
 #include "../scanner/Scanner.h"
 #include "../scanner/Token.h"
 #include "ParserExceptions.h"
@@ -32,7 +31,7 @@ enum ExpectedTokens {
 class Parser {
  public:
   explicit Parser(std::istream &in) : scanner(in) {}
-  Program parse();
+  std::unique_ptr<CodeBlock> parse();
 
  private:
   Scanner scanner;

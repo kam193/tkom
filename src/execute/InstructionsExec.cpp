@@ -129,6 +129,7 @@ bool Expression::checkCompatibility(ValueType left, ValueType right,
   return findRight != allowedOperands[left][op].end();
 }
 
+// TODO: FIX - no copy constr in Value
 std::shared_ptr<Value> Expression::execExprList(std::shared_ptr<Value> list,
                                                 std::shared_ptr<Value> right,
                                                 Type op) {
@@ -241,4 +242,20 @@ std::shared_ptr<Value> AssignExpr::exec(std::shared_ptr<Context> ctx) {
     ctx->setVariable(variableName, newvalue);
     return newvalue;
   }
+}
+
+std::shared_ptr<Value> For::exec(std::shared_ptr<Context> ctx) {
+  auto rangeList = range->exec(ctx);
+  if (rangeList->getType() != ValueType::List) throw IterableExpected();
+
+  std::shared_ptr<Value> result;
+  for (auto value : rangeList->getList()) {
+    ctx->setVariable(iterator, value);
+    result = code->exec(ctx);
+    if (result->getType() == ValueType::T_BREAK) break;
+    if (result->getType() == ValueType::T_CONTINUE) continue;
+    if (result->getType() == ValueType::T_RETURN) return result->getValuePtr();
+  }
+
+  return std::make_shared<Value>(ValueType::None);
 }

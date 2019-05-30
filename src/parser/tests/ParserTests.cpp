@@ -11,7 +11,9 @@ void assertExpectedCode(const std::string &code, const std::string &expected) {
   std::stringstream input(code);
   Parser parser(input);
   auto parsed = parser.parse();
-  BOOST_TEST(parsed.codeToString() == expected);
+  auto str = parsed->toString();
+  str = std::regex_replace(str, std::regex("(^|\n)  "), "$1");
+  BOOST_TEST(str == expected);
 }
 
 void assertExpectedCode(const std::string &code) {

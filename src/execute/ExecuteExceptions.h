@@ -60,4 +60,12 @@ class UnexpectedError : public ExecuteExceptionBase {
   }
 };
 
+class IterableExpected : public ExecuteExceptionBase {
+ public:
+  IterableExpected() : ExecuteExceptionBase() {
+    message +=
+        "For expected slice or list as a range, but something else is given.";
+  }
+};
+
 #endif  // SRC_EXECUTE_EXECUTEEXCEPTIONS_H_

@@ -675,4 +675,59 @@ BOOST_AUTO_TEST_CASE(test_add_assign_expr_incompatibile_throw) {
   BOOST_CHECK_THROW(expr.exec(ctx), OperandsTypesNotCompatible);
 }
 
+BOOST_AUTO_TEST_CASE(test_for_execute) {
+  auto ctx = empty_context();
+  std::string name = "i";
+  auto cb = std::make_unique<CodeBlock>();
+  cb->addInstruction(mock_instr());
+
+  MockInstruction::resetExecutedCount();
+  For forinstr(name, get_list_of_ints(), std::move(cb));
+  forinstr.exec(ctx);
+
+  BOOST_TEST(MockInstruction::getExecutedCount() == 3);
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_for_not_iterable_throw) {
+  auto ctx = empty_context();
+  std::string rangename = "var";
+  ctx->setVariable(rangename, std::make_shared<Value>(1L));
+  auto cb = std::make_unique<CodeBlock>();
+  cb->addInstruction(mock_instr());
+
+  For forinstr("i", std::make_unique<Variable>(rangename), std::move(cb));
+  BOOST_CHECK_THROW(forinstr.exec(ctx), IterableExpected);
+}
+
+BOOST_AUTO_TEST_CASE(test_for_break) {
+  auto ctx = empty_context();
+  std::string name = "i";
+  auto cb = std::make_unique<CodeBlock>();
+  cb->addInstruction(mock_instr());
+  cb->addInstruction(std::make_unique<Break>());
+
+  MockInstruction::resetExecutedCount();
+  For forinstr(name, get_list_of_ints(), std::move(cb));
+  forinstr.exec(ctx);
+
+  BOOST_TEST(MockInstruction::getExecutedCount() == 1);
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 1);
+}
+
+BOOST_AUTO_TEST_CASE(test_for_continue) {
+  auto ctx = empty_context();
+  std::string name = "i";
+  auto cb = std::make_unique<CodeBlock>();
+  cb->addInstruction(std::make_unique<Continue>());
+  cb->addInstruction(mock_instr());
+
+  MockInstruction::resetExecutedCount();
+  For forinstr(name, get_list_of_ints(), std::move(cb));
+  forinstr.exec(ctx);
+
+  BOOST_TEST(MockInstruction::getExecutedCount() == 0);
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 3);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

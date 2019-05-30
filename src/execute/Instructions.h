@@ -33,7 +33,8 @@ enum TypeInstruction {
   BreakT,
   IfT,
   ForT,
-  WhileT
+  WhileT,
+  BuiltInFuncT
 };
 
 class Context;
@@ -282,6 +283,7 @@ class For : public Instruction {
       : iterator(iterator), range(std::move(range)), code(std::move(code)) {}
   TypeInstruction getInstructionType() override { return ForT; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   std::string iterator;

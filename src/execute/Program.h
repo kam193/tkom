@@ -3,22 +3,24 @@
 #ifndef SRC_EXECUTE_PROGRAM_H_
 #define SRC_EXECUTE_PROGRAM_H_
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "Instructions.h"
+#include "../parser/Parser.h"
+#include "BuiltInFunc.h"
+#include "Context.h"
 
 class Program {
  private:
-  std::unique_ptr<CodeBlock> code;
+  std::istream &in;
+  std::ostream &out;
+  std::shared_ptr<Context> makeGlobalContext();
 
  public:
-  explicit Program(std::unique_ptr<CodeBlock> code) : code(std::move(code)) {}
-  std::string codeToString() {
-    std::string tmp = code->toString();
-    return std::regex_replace(tmp, std::regex("(^|\n)  "), "$1");
-  }
+  explicit Program(std::istream &in, std::ostream &out) : in(in), out(out) {}
+  void run();
 };
 
 #endif  // SRC_EXECUTE_PROGRAM_H_
