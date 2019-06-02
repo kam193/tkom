@@ -74,6 +74,22 @@ std::unique_ptr<Expression> expression_const_5() {
   return std::move(expr);
 }
 
+std::unique_ptr<Expression> constant_expr(std::unique_ptr<Constant> cst) {
+  auto expr = std::make_unique<Expression>();
+  expr->setArgument(std::move(cst));
+  return std::move(expr);
+}
+
+void test_compare(CompareExpr::Type type, std::unique_ptr<Constant> left_const,
+                  std::unique_ptr<Constant> right_const, bool expected) {
+  auto ctx = empty_context();
+  CompareExpr cmp(type, constant_expr(std::move(left_const)),
+                  constant_expr(std::move(right_const)));
+  auto result = cmp.exec(ctx);
+  BOOST_TEST((result->getType() == ValueType::Bool));
+  BOOST_TEST(result->getBool() == expected);
+}
+
 BOOST_AUTO_TEST_CASE(test_simple_constants_exec_value) {
   Constant none(ValueType::None);
   auto val = none.exec(empty_context());
@@ -728,6 +744,184 @@ BOOST_AUTO_TEST_CASE(test_for_continue) {
 
   BOOST_TEST(MockInstruction::getExecutedCount() == 0);
   BOOST_TEST(ctx->getVariableValue(name)->getInt() == 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_equal_true) {
+  test_compare(CompareExpr::Type::Equal, constant<int64_t>(3),
+               constant<int64_t>(3), true);
+  test_compare(CompareExpr::Type::Equal, constant<double>(3.30),
+               constant<double>(3.30), true);
+  test_compare(CompareExpr::Type::Equal, constant<int64_t>(3),
+               constant<double>(3.0), true);
+  test_compare(CompareExpr::Type::Equal, constant<std::string>("test"),
+               constant<std::string>("test"), true);
+  test_compare(CompareExpr::Type::Equal, get_list_of_ints(), get_list_of_ints(),
+               true);
+  test_compare(CompareExpr::Type::Equal, constant<ValueType>(ValueType::None),
+               constant<ValueType>(ValueType::None), true);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_diff_false) {
+  test_compare(CompareExpr::Type::Different, constant<int64_t>(3),
+               constant<int64_t>(3), false);
+  test_compare(CompareExpr::Type::Different, constant<double>(3.30),
+               constant<double>(3.30), false);
+  test_compare(CompareExpr::Type::Different, constant<int64_t>(3),
+               constant<double>(3.0), false);
+  test_compare(CompareExpr::Type::Different, constant<std::string>("test"),
+               constant<std::string>("test"), false);
+
+  test_compare(CompareExpr::Type::Different, get_list_of_ints(),
+               get_list_of_ints(), false);
+
+  test_compare(CompareExpr::Type::Different,
+               constant<ValueType>(ValueType::None),
+               constant<ValueType>(ValueType::None), false);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_diff_true) {
+  test_compare(CompareExpr::Type::Different, constant<int64_t>(3),
+               constant<int64_t>(5), true);
+  test_compare(CompareExpr::Type::Different, constant<double>(3.30),
+               constant<double>(3.10), true);
+  test_compare(CompareExpr::Type::Different, constant<int64_t>(3),
+               constant<double>(3.30), true);
+  test_compare(CompareExpr::Type::Different, constant<std::string>("test"),
+               constant<std::string>("noest"), true);
+
+  test_compare(CompareExpr::Type::Different,
+               constant<ValueType>(ValueType::None), get_list_of_ints(), true);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_equal_false) {
+  test_compare(CompareExpr::Type::Equal, constant<int64_t>(3),
+               constant<int64_t>(5), false);
+  test_compare(CompareExpr::Type::Equal, constant<double>(3.30),
+               constant<double>(3.99), false);
+  test_compare(CompareExpr::Type::Equal, constant<int64_t>(3),
+               constant<double>(3.99), false);
+  test_compare(CompareExpr::Type::Equal, constant<std::string>("test"),
+               constant<std::string>("other"), false);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_equal_false_types) {
+  test_compare(CompareExpr::Type::Equal, constant<int64_t>(3),
+               constant<std::string>("str"), false);
+  test_compare(CompareExpr::Type::Equal, constant<double>(3.30),
+               constant<bool>(true), false);
+  test_compare(CompareExpr::Type::Equal, constant<int64_t>(3),
+               get_list_of_ints(), false);
+  test_compare(CompareExpr::Type::Equal, constant<std::string>("test"),
+               constant<ValueType>(ValueType::None), false);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_less_true) {
+  test_compare(CompareExpr::Type::Less, constant<int64_t>(3),
+               constant<int64_t>(5), true);
+  test_compare(CompareExpr::Type::Less, constant<double>(3.30),
+               constant<double>(3.99), true);
+  test_compare(CompareExpr::Type::Less, constant<int64_t>(3),
+               constant<double>(3.99), true);
+  test_compare(CompareExpr::Type::Less, constant<std::string>("test"),
+               constant<std::string>("tfst"), true);
+  test_compare(CompareExpr::Type::Less, constant<std::string>("aa"),
+               constant<std::string>("aaa"), true);
+
+  test_compare(CompareExpr::Type::LessEq, constant<int64_t>(3),
+               constant<int64_t>(3), true);
+  test_compare(CompareExpr::Type::LessEq, constant<double>(3.30),
+               constant<double>(3.99), true);
+  test_compare(CompareExpr::Type::LessEq, constant<int64_t>(3),
+               constant<double>(3.0), true);
+  test_compare(CompareExpr::Type::LessEq, constant<std::string>("test"),
+               constant<std::string>("test"), true);
+  test_compare(CompareExpr::Type::LessEq, constant<std::string>("aa"),
+               constant<std::string>("aaa"), true);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_less_false) {
+  for (auto type : {CompareExpr::Type::Less, CompareExpr::Type::LessEq}) {
+    test_compare(type, constant<int64_t>(3), constant<int64_t>(2), false);
+    test_compare(type, constant<double>(3.30), constant<double>(2.22), false);
+    test_compare(type, constant<int64_t>(3), constant<double>(1.5), false);
+    test_compare(type, constant<std::string>("test"),
+                 constant<std::string>("afst"), false);
+    test_compare(type, constant<std::string>("aaa"),
+                 constant<std::string>("aa"), false);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_greater_true) {
+  test_compare(CompareExpr::Type::Greater, constant<int64_t>(5),
+               constant<int64_t>(3), true);
+  test_compare(CompareExpr::Type::Greater, constant<double>(4.50),
+               constant<double>(3.99), true);
+  test_compare(CompareExpr::Type::Greater, constant<int64_t>(8),
+               constant<double>(3.99), true);
+  test_compare(CompareExpr::Type::Greater, constant<std::string>("zest"),
+               constant<std::string>("tfst"), true);
+  test_compare(CompareExpr::Type::Greater, constant<std::string>("aaa"),
+               constant<std::string>("aa"), true);
+
+  test_compare(CompareExpr::Type::GreaterEq, constant<int64_t>(3),
+               constant<int64_t>(3), true);
+  test_compare(CompareExpr::Type::GreaterEq, constant<double>(3.30),
+               constant<double>(3.10), true);
+  test_compare(CompareExpr::Type::GreaterEq, constant<int64_t>(3),
+               constant<double>(3.0), true);
+  test_compare(CompareExpr::Type::GreaterEq, constant<std::string>("test"),
+               constant<std::string>("test"), true);
+  test_compare(CompareExpr::Type::GreaterEq, constant<std::string>("aaa"),
+               constant<std::string>("aa"), true);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_greater_false) {
+  for (auto type : {CompareExpr::Type::Greater, CompareExpr::Type::GreaterEq}) {
+    test_compare(type, constant<int64_t>(1), constant<int64_t>(2), false);
+    test_compare(type, constant<double>(1.30), constant<double>(2.22), false);
+    test_compare(type, constant<int64_t>(1), constant<double>(1.5), false);
+    test_compare(type, constant<std::string>("afst"),
+                 constant<std::string>("test"), false);
+    test_compare(type, constant<std::string>("aa"),
+                 constant<std::string>("aaa"), false);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_nocomp) {
+  auto ctx = empty_context();
+  int64_t value = 11;
+  auto expr = constant_expr(constant<int64_t>(value));
+
+  CompareExpr cmp(std::move(expr));
+  auto result = cmp.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::Int));
+  BOOST_TEST(result->getInt() == value);
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_incomparable_types) {
+  for (auto type : {CompareExpr::Type::Greater, CompareExpr::Type::GreaterEq,
+                    CompareExpr::Type::Less, CompareExpr::Type::LessEq}) {
+    BOOST_CHECK_THROW(test_compare(type, constant<ValueType>(ValueType::None),
+                                   constant<ValueType>(ValueType::None), false),
+                      TypesNotComparable);
+
+    BOOST_CHECK_THROW(test_compare(type, get_list_of_ints(),
+                                   constant<ValueType>(ValueType::None), false),
+                      TypesNotComparable);
+
+    BOOST_CHECK_THROW(test_compare(type, constant<std::string>("test"),
+                                   constant<int64_t>(11), false),
+                      TypesNotComparable);
+
+    BOOST_CHECK_THROW(test_compare(type, constant<bool>(false),
+                                   constant<ValueType>(ValueType::None), false),
+                      TypesNotComparable);
+
+    BOOST_CHECK_THROW(
+        test_compare(type, constant<bool>(true), constant<double>(1.5), false),
+        TypesNotComparable);
+  }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

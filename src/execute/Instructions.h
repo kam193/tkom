@@ -219,11 +219,22 @@ class CompareExpr : public Instruction {
 
   TypeInstruction getInstructionType() override { return CompareExprT; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   Type type;
   std::unique_ptr<Expression> leftExpr;
   std::unique_ptr<Expression> rightExpr;
+  bool checkEqual(std::shared_ptr<Value> left, std::shared_ptr<Value> right);
+  bool checkEqualList(std::shared_ptr<Value> left,
+                      std::shared_ptr<Value> right);
+  bool checkTypeCompatibility(ValueType left, ValueType right);
+  bool compare(std::shared_ptr<Value> left, std::shared_ptr<Value> right,
+               CompareExpr::Type cmp);
+  template <typename T>
+  bool compare(T left, T right, CompareExpr::Type cmp);
+  bool compareList(std::shared_ptr<Value> left, std::shared_ptr<Value> right,
+                   CompareExpr::Type cmp);
 
   std::string operatorToString();
 };

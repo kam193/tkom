@@ -259,3 +259,125 @@ std::shared_ptr<Value> For::exec(std::shared_ptr<Context> ctx) {
 
   return std::make_shared<Value>(ValueType::None);
 }
+
+bool CompareExpr::checkTypeCompatibility(ValueType left, ValueType right) {
+  // Only pair (int, real) can be compare if types are not the same
+  if (left == ValueType::Int && right == ValueType::Real ||
+      left == ValueType::Real && right == ValueType::Int)
+    return true;
+  if (left != right) return false;
+  return true;
+}
+
+bool CompareExpr::checkEqual(std::shared_ptr<Value> left,
+                             std::shared_ptr<Value> right) {
+  auto leftType = left->getType();
+  auto rightType = right->getType();
+
+  // Only pair (int, real) can be equal if types are not the same
+  if (!checkTypeCompatibility(leftType, rightType)) return false;
+
+  switch (leftType) {
+    case ValueType::Int:
+      if (rightType == ValueType::Real)
+        return (double)left->getInt() == right->getReal();
+      return left->getInt() == right->getInt();
+    case ValueType::Real:
+      if (rightType == ValueType::Int)
+        return left->getReal() == (double)right->getInt();
+      return left->getReal() == right->getReal();
+    case ValueType::Bool:
+      return left->getBool() == right->getBool();
+    case ValueType::None:
+      return true;
+    case ValueType::Text:
+      return left->getStr() == right->getStr();
+    case ValueType::List:
+      return checkEqualList(left, right);
+  }
+
+  throw UnexpectedError();
+}
+
+bool CompareExpr::checkEqualList(std::shared_ptr<Value> left,
+                                 std::shared_ptr<Value> right) {
+  auto leftList = left->getList();
+  auto rightList = right->getList();
+
+  if (leftList.size() != rightList.size()) return false;
+  for (int i = 0; i < leftList.size(); ++i) {
+    if (!checkEqual(leftList[i], rightList[i])) return false;
+  }
+  return true;
+}
+
+template <typename T>
+bool CompareExpr::compare(T left, T right, CompareExpr::Type cmp) {
+  switch (cmp) {
+    case Less:
+      return left < right;
+    case LessEq:
+      return left <= right;
+    case Greater:
+      return left > right;
+    case GreaterEq:
+      return left >= right;
+  }
+  throw UnexpectedError();
+}
+
+bool CompareExpr::compare(std::shared_ptr<Value> left,
+                          std::shared_ptr<Value> right, CompareExpr::Type cmp) {
+  if (!checkTypeCompatibility(left->getType(), right->getType()) ||
+      left->getType() == ValueType::None || left->getType() == ValueType::Bool)
+    throw TypesNotComparable();
+
+  switch (left->getType()) {
+    case ValueType::Text:
+      return compare<std::string>(left->getStr(), right->getStr(), cmp);
+    case ValueType::List:
+      return compareList(left, right, cmp);
+    case ValueType::Int:
+      if (right->getType() == ValueType::Real)
+        return compare<double>(left->getInt(), right->getReal(), cmp);
+      return compare<int64_t>(left->getInt(), right->getInt(), cmp);
+    case ValueType::Real:
+      if (right->getType() == ValueType::Int)
+        return compare<double>(left->getReal(), right->getInt(), cmp);
+      return compare<double>(left->getReal(), right->getReal(), cmp);
+  }
+
+  throw UnexpectedError();
+}
+
+bool CompareExpr::compareList(std::shared_ptr<Value> left,
+                              std::shared_ptr<Value> right,
+                              CompareExpr::Type cmp) {
+  auto leftList = left->getList();
+  auto rightList = right->getList();
+
+  for (int i = 0; i < leftList.size(); ++i) {
+    if (i < rightList.size()) {
+      if (!compare(leftList[i], rightList[i], cmp)) return false;
+    } else {
+      return compare<int>(leftList.size(), rightList.size(), cmp);
+    }
+  }
+  return true;
+}
+
+std::shared_ptr<Value> CompareExpr::exec(std::shared_ptr<Context> ctx) {
+  switch (type) {
+    case NoComp:
+      return leftExpr->exec(ctx);
+    case Equal:
+      return std::make_shared<Value>(
+          checkEqual(leftExpr->exec(ctx), rightExpr->exec(ctx)));
+    case Different:
+      return std::make_shared<Value>(
+          !checkEqual(leftExpr->exec(ctx), rightExpr->exec(ctx)));
+    default:
+      return std::make_shared<Value>(
+          compare(leftExpr->exec(ctx), rightExpr->exec(ctx), type));
+  }
+}

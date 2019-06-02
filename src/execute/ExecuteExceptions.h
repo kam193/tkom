@@ -68,4 +68,11 @@ class IterableExpected : public ExecuteExceptionBase {
   }
 };
 
+class TypesNotComparable : public ExecuteExceptionBase {
+ public:
+  TypesNotComparable() : ExecuteExceptionBase() {
+    message += "Types in compare expression are not comparable.";
+  }
+};
+
 #endif  // SRC_EXECUTE_EXECUTEEXCEPTIONS_H_

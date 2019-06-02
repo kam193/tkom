@@ -2,7 +2,7 @@
 
 #include "Program.h"
 
-// TODO: tests
+// TODO: tests & exeptions
 void Program::run() {
   Parser parser(in);
   auto code = parser.parse();
