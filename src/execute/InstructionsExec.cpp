@@ -31,7 +31,7 @@ std::shared_ptr<Value> Variable::exec(std::shared_ptr<Context> ctx) {
 
 std::shared_ptr<Value> Return::exec(std::shared_ptr<Context> ctx) {
   auto retValue = value->exec(ctx);
-  return std::make_shared<Value>(retValue);
+  return std::make_shared<Value>(ValueType::T_RETURN, retValue);
 }
 
 std::shared_ptr<Value> CodeBlock::exec(std::shared_ptr<Context> ctx) {
@@ -129,7 +129,6 @@ bool Expression::checkCompatibility(ValueType left, ValueType right,
   return findRight != allowedOperands[left][op].end();
 }
 
-// TODO: FIX - no copy constr in Value
 std::shared_ptr<Value> Expression::execExprList(std::shared_ptr<Value> list,
                                                 std::shared_ptr<Value> right,
                                                 Type op) {
@@ -137,13 +136,13 @@ std::shared_ptr<Value> Expression::execExprList(std::shared_ptr<Value> list,
   if (op == Type::Mul) {
     for (int i = 0; i < right->getInt(); ++i) {
       for (auto& elem : list->getList())
-        elements.push_back(std::make_shared<Value>(elem));
+        elements.push_back(std::make_shared<Value>(*elem));
     }
   } else {
     for (auto& elem : list->getList())
-      elements.push_back(std::make_shared<Value>(elem));
+      elements.push_back(std::make_shared<Value>(*elem));
     for (auto& elem : right->getList())
-      elements.push_back(std::make_shared<Value>(elem));
+      elements.push_back(std::make_shared<Value>(*elem));
   }
 
   return std::make_shared<Value>(elements);

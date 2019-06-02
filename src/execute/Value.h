@@ -24,8 +24,8 @@ enum class ValueType {
 class Value {
  public:
   Value() : type(ValueType::None) {}
-  explicit Value(std::shared_ptr<Value> val)
-      : type(ValueType::T_RETURN), val_ptr(val) {}
+  Value(ValueType type, std::shared_ptr<Value> val)
+      : type(type), val_ptr(val) {}
   explicit Value(ValueType type) : type(type) {}
   explicit Value(bool value) : type(ValueType::Bool), boolValue(value) {}
   explicit Value(std::int64_t value) : type(ValueType::Int), intValue(value) {}

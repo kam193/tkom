@@ -465,7 +465,14 @@ BOOST_AUTO_TEST_CASE(test_list_mul) {
   auto result = expr.exec(ctx);
 
   BOOST_TEST((result->getType() == ValueType::List));
-  BOOST_TEST(result->getList().size() == 9);
+  auto newlist = result->getList();
+  BOOST_TEST(newlist.size() == 9);
+  BOOST_TEST(newlist[0]->getInt() == 1);
+  BOOST_TEST(newlist[1]->getInt() == 2);
+  BOOST_TEST(newlist[2]->getInt() == 3);
+  BOOST_TEST(newlist[3]->getInt() == 1);
+  BOOST_TEST(newlist[4]->getInt() == 2);
+  BOOST_TEST(newlist[5]->getInt() == 3);
 }
 
 BOOST_AUTO_TEST_CASE(test_list_mul_negative) {
