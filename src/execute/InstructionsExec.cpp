@@ -254,7 +254,7 @@ std::shared_ptr<Value> For::exec(std::shared_ptr<Context> ctx) {
     result = code->exec(ctx);
     if (result->getType() == ValueType::T_BREAK) break;
     if (result->getType() == ValueType::T_CONTINUE) continue;
-    if (result->getType() == ValueType::T_RETURN) return result->getValuePtr();
+    if (result->getType() == ValueType::T_RETURN) return result;
   }
 
   return std::make_shared<Value>(ValueType::None);
@@ -380,4 +380,41 @@ std::shared_ptr<Value> CompareExpr::exec(std::shared_ptr<Context> ctx) {
       return std::make_shared<Value>(
           compare(leftExpr->exec(ctx), rightExpr->exec(ctx), type));
   }
+}
+
+bool CompareExpr::isFalseEquivalent(std::shared_ptr<Value> val) {
+  switch (val->getType()) {
+    case ValueType::Bool:
+      return val->getBool() == false;
+    case ValueType::Int:
+      return val->getInt() == 0;
+    case ValueType::Real:
+      return val->getReal() == 0.0;
+    case ValueType::List:
+      return val->getList().size() == 0;
+    case ValueType::Text:
+      return val->getStr() == "";
+    case ValueType::None:
+      return true;
+  }
+  throw UnexpectedError();
+}
+
+std::shared_ptr<Value> If::exec(std::shared_ptr<Context> ctx) {
+  auto cmpResult = compare->exec(ctx);
+  if (CompareExpr::isFalseEquivalent(cmpResult))
+    return std::make_shared<Value>(ValueType::None);
+  return ifCode->exec(ctx);
+}
+
+std::shared_ptr<Value> While::exec(std::shared_ptr<Context> ctx) {
+  auto cmpResult = compare->exec(ctx);
+  while (!CompareExpr::isFalseEquivalent(cmpResult)) {
+    auto result = code->exec(ctx);
+    if (result->getType() == ValueType::T_BREAK) break;
+    if (result->getType() == ValueType::T_RETURN) return result;
+    cmpResult = compare->exec(ctx);
+    // if (result->getType() == ValueType::T_CONTINUE) continue;
+  }
+  return std::make_shared<Value>(ValueType::None);
 }

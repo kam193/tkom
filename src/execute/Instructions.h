@@ -221,6 +221,8 @@ class CompareExpr : public Instruction {
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
+  static bool isFalseEquivalent(std::shared_ptr<Value> val);
+
  private:
   Type type;
   std::unique_ptr<Expression> leftExpr;
@@ -280,6 +282,7 @@ class If : public Instruction {
 
   TypeInstruction getInstructionType() override { return IfT; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   std::unique_ptr<CompareExpr> compare;
@@ -308,6 +311,7 @@ class While : public Instruction {
       : compare(std::move(compare)), code(std::move(code)) {}
   TypeInstruction getInstructionType() override { return WhileT; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   std::unique_ptr<CompareExpr> compare;

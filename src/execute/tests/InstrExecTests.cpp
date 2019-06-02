@@ -33,6 +33,11 @@ std::unique_ptr<Constant> constant(ConstType value) {
   return std::make_unique<Constant>(value);
 }
 
+template <typename ValueType>
+std::shared_ptr<Value> get_value(ValueType value) {
+  return std::make_shared<Value>(value);
+}
+
 // [1, 2, 3]
 std::unique_ptr<Constant> get_list_of_ints() {
   std::vector<std::unique_ptr<Instruction>> elements;
@@ -74,7 +79,7 @@ std::unique_ptr<Expression> expression_const_5() {
   return std::move(expr);
 }
 
-std::unique_ptr<Expression> constant_expr(std::unique_ptr<Constant> cst) {
+std::unique_ptr<Expression> constant_expr(std::unique_ptr<Instruction> cst) {
   auto expr = std::make_unique<Expression>();
   expr->setArgument(std::move(cst));
   return std::move(expr);
@@ -922,6 +927,133 @@ BOOST_AUTO_TEST_CASE(test_compare_incomparable_types) {
         test_compare(type, constant<bool>(true), constant<double>(1.5), false),
         TypesNotComparable);
   }
+}
+
+BOOST_AUTO_TEST_CASE(test_compare_false_equivalent) {
+  std::vector<std::shared_ptr<Value>> empty_elements;
+  auto empty_list = std::make_shared<Value>(empty_elements);
+
+  std::vector<std::shared_ptr<Value>> elements;
+  elements.push_back(get_value<int64_t>(1));
+  auto list = std::make_shared<Value>(elements);
+
+  BOOST_TEST(CompareExpr::isFalseEquivalent(empty_list) == true);
+  BOOST_TEST(CompareExpr::isFalseEquivalent(
+                 get_value<ValueType>(ValueType::None)) == true);
+  BOOST_TEST(CompareExpr::isFalseEquivalent(get_value<int64_t>(0)) == true);
+  BOOST_TEST(CompareExpr::isFalseEquivalent(get_value<double>(0.0)) == true);
+  BOOST_TEST(CompareExpr::isFalseEquivalent(get_value<std::string>("")) ==
+             true);
+
+  BOOST_TEST(CompareExpr::isFalseEquivalent(list) == false);
+  BOOST_TEST(CompareExpr::isFalseEquivalent(get_value<int64_t>(11)) == false);
+  BOOST_TEST(CompareExpr::isFalseEquivalent(get_value<double>(2.0)) == false);
+  BOOST_TEST(CompareExpr::isFalseEquivalent(get_value<std::string>("test")) ==
+             false);
+}
+
+BOOST_AUTO_TEST_CASE(test_if_not_execute) {
+  auto ctx = empty_context();
+  auto cmp = std::make_unique<CompareExpr>(
+      constant_expr(constant<ValueType>(ValueType::None)));
+  auto code = std::make_unique<CodeBlock>();
+  code->addInstruction(mock_instr());
+
+  MockInstruction::resetExecutedCount();
+  If test_if(std::move(cmp), std::move(code));
+  test_if.exec(ctx);
+  BOOST_TEST(MockInstruction::getExecutedCount() == 0);
+}
+
+BOOST_AUTO_TEST_CASE(test_if_execute) {
+  auto ctx = empty_context();
+  auto cmp = std::make_unique<CompareExpr>(constant_expr(constant<bool>(true)));
+  auto code = std::make_unique<CodeBlock>();
+  code->addInstruction(mock_instr());
+
+  MockInstruction::resetExecutedCount();
+  If test_if(std::move(cmp), std::move(code));
+  test_if.exec(ctx);
+  BOOST_TEST(MockInstruction::getExecutedCount() == 1);
+}
+
+BOOST_AUTO_TEST_CASE(test_while_execute) {
+  auto ctx = empty_context();
+  std::string name = "i";
+  ctx->setVariable(name, get_value<int64_t>(0));
+
+  auto cmp = std::make_unique<CompareExpr>(
+      CompareExpr::Type::Less, constant_expr(std::make_unique<Variable>(name)),
+      constant_expr(constant<int64_t>(2)));
+  auto increment_i = std::make_unique<AssignExpr>(
+      AssignExpr::AddAssign, name, constant_expr(constant<int64_t>(1)));
+  auto cb = std::make_unique<CodeBlock>();
+  cb->addInstruction(mock_instr());
+  cb->addInstruction(std::move(increment_i));
+
+  MockInstruction::resetExecutedCount();
+  While whileinstr(std::move(cmp), std::move(cb));
+  whileinstr.exec(ctx);
+
+  BOOST_TEST(MockInstruction::getExecutedCount() == 2);
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 2);
+}
+
+BOOST_AUTO_TEST_CASE(test_while_break) {
+  auto ctx = empty_context();
+  std::string name = "i";
+  ctx->setVariable(name, get_value<int64_t>(0));
+
+  auto cmp = std::make_unique<CompareExpr>(
+      CompareExpr::Type::Less, constant_expr(std::make_unique<Variable>(name)),
+      constant_expr(constant<int64_t>(2)));
+  auto increment_i = std::make_unique<AssignExpr>(
+      AssignExpr::AddAssign, name, constant_expr(constant<int64_t>(1)));
+  auto cb = std::make_unique<CodeBlock>();
+  cb->addInstruction(mock_instr());
+  cb->addInstruction(std::make_unique<Break>());
+  cb->addInstruction(std::move(increment_i));
+
+  MockInstruction::resetExecutedCount();
+  While whileinstr(std::move(cmp), std::move(cb));
+  whileinstr.exec(ctx);
+
+  BOOST_TEST(MockInstruction::getExecutedCount() == 1);
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 0);
+}
+
+BOOST_AUTO_TEST_CASE(test_while_continue) {
+  auto ctx = empty_context();
+  std::string name = "i";
+  ctx->setVariable(name, get_value<int64_t>(0));
+
+  // while i < 2:
+  //   i += 1
+  //   if i == 2:
+  //     continue
+  //   MockInstruction
+  auto cmp = std::make_unique<CompareExpr>(
+      CompareExpr::Type::Less, constant_expr(std::make_unique<Variable>(name)),
+      constant_expr(constant<int64_t>(2)));
+  auto increment_i = std::make_unique<AssignExpr>(
+      AssignExpr::AddAssign, name, constant_expr(constant<int64_t>(1)));
+  auto if_code = std::make_unique<CodeBlock>();
+  if_code->addInstruction(std::make_unique<Continue>());
+  auto if_cmp = std::make_unique<CompareExpr>(
+      CompareExpr::Type::Equal, constant_expr(std::make_unique<Variable>(name)),
+      constant_expr(constant<int64_t>(2)));
+  auto if_instr = std::make_unique<If>(std::move(if_cmp), std::move(if_code));
+  auto cb = std::make_unique<CodeBlock>();
+  cb->addInstruction(std::move(increment_i));
+  cb->addInstruction(std::move(if_instr));
+  cb->addInstruction(mock_instr());
+
+  MockInstruction::resetExecutedCount();
+  While whileinstr(std::move(cmp), std::move(cb));
+  whileinstr.exec(ctx);
+
+  BOOST_TEST(MockInstruction::getExecutedCount() == 1);
+  BOOST_TEST(ctx->getVariableValue(name)->getInt() == 2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
