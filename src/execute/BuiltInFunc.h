@@ -9,9 +9,9 @@
 
 #include "Instructions.h"
 
-class PrintFunc : public Instruction {
+class PrintFunction : public Instruction {
  public:
-  explicit PrintFunc(std::ostream &out) : out(out) {}
+  explicit PrintFunction(std::ostream &out) : out(out) {}
 
   TypeInstruction getInstructionType() override { return BuiltInFuncT; }
   std::string instrName() override { return "print"; }
@@ -19,6 +19,18 @@ class PrintFunc : public Instruction {
 
  private:
   std::ostream &out;
+};
+
+class RangeFunction : public Instruction {
+ public:
+  RangeFunction() {}
+
+  std::string instrName() override { return name; }
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
+
+ private:
+  const int PARAMS_SIZE = 1;
+  std::string name = "range";
 };
 
 #endif  // SRC_EXECUTE_BUILTINFUNC_H_

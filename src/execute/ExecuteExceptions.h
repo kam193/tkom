@@ -85,4 +85,11 @@ class ParametersCountNotExpected : public ExecuteExceptionBase {
   }
 };
 
+class TypeNotExpected : public ExecuteExceptionBase {
+ public:
+  explicit TypeNotExpected(std::string expected) : ExecuteExceptionBase() {
+    message += "Variable type not expected. It should be '" + expected + "'.";
+  }
+};
+
 #endif  // SRC_EXECUTE_EXECUTEEXCEPTIONS_H_

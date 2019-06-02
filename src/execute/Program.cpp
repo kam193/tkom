@@ -16,8 +16,11 @@ void Program::run() {
 std::shared_ptr<Context> Program::makeGlobalContext() {
   auto ctx = std::make_shared<Context>();
 
-  auto print = std::make_shared<PrintFunc>(out);
+  auto print = std::make_shared<PrintFunction>(out);
   ctx->setFunction(print->instrName(), print);
+
+  auto range = std::make_shared<RangeFunction>();
+  ctx->setFunction(range->instrName(), range);
 
   return ctx;
 }
