@@ -103,4 +103,12 @@ class InvalidForLoop : public ParserExceptionBase {
   }
 };
 
+class IndentNotMatch : public ParserExceptionBase {
+ public:
+  explicit IndentNotMatch(const Token& token) : ParserExceptionBase(token) {
+    message +=
+        "Indent level don't mach any outer indentation. File not fully parsed.";
+  }
+};
+
 #endif  // SRC_PARSER_PARSEREXCEPTIONS_H_

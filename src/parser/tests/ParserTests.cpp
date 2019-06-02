@@ -147,4 +147,9 @@ BOOST_AUTO_TEST_CASE(test_invalid_for) {
   assertExpectedException<InvalidForLoop>(program);
 }
 
+BOOST_AUTO_TEST_CASE(test_invalid_indent) {
+  std::string program = "print()\n print()";
+  assertExpectedException<IndentNotMatch>(program);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

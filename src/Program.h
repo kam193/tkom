@@ -1,16 +1,16 @@
 // Copyright 2019 Kamil Mankowski
 
-#ifndef SRC_EXECUTE_PROGRAM_H_
-#define SRC_EXECUTE_PROGRAM_H_
+#ifndef SRC_PROGRAM_H_
+#define SRC_PROGRAM_H_
 
 #include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
 
-#include "../parser/Parser.h"
-#include "BuiltInFunc.h"
-#include "Context.h"
+#include "parser/Parser.h"
+#include "execute/BuiltInFunc.h"
+#include "execute/Context.h"
 
 class Program {
  private:

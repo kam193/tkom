@@ -13,6 +13,7 @@ std::unordered_map<ExpectedTokens, std::set<ttype>, std::hash<int>>
 std::unique_ptr<CodeBlock> Parser::parse() {
   getNextToken(ttype::space);
   auto code = parseCodeBlock(currentToken.getInteger());
+  if (!checkTokenType(ttype::eof)) throw IndentNotMatch(currentToken);
   return std::move(code);
 }
 

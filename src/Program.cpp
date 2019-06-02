@@ -2,7 +2,6 @@
 
 #include "Program.h"
 
-// TODO: tests & exeptions
 void Program::run() {
   Parser parser(in);
   auto code = parser.parse();
@@ -10,7 +9,7 @@ void Program::run() {
   auto global = makeGlobalContext();
   auto result = code->exec(global);
 
-  out << "\nEXECUTING END.";
+  out << "\nEXECUTING SUCCESSFULLY END.";
 }
 
 std::shared_ptr<Context> Program::makeGlobalContext() {
