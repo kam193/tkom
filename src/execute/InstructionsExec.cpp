@@ -36,11 +36,11 @@ std::shared_ptr<Value> Return::exec(std::shared_ptr<Context> ctx) {
 
 std::shared_ptr<Value> CodeBlock::exec(std::shared_ptr<Context> ctx) {
   for (int i = 0; i < instructions.size(); i++) {
-    if (instructions[i]->getInstructionType() == FunctionT) {
-      auto name = instructions[i]->instrName();
-      ctx->setFunction(name, std::move(instructions[i]));
-      continue;
-    }
+    // if (instructions[i]->getInstructionType() == FunctionT) {
+    //   auto name = instructions[i]->instrName();
+    //   ctx->setFunction(name, std::move(instructions[i]));
+    //   continue;
+    // }
     auto result = instructions[i]->exec(ctx);
     if (isResultToReturn(result)) return result;
   }
@@ -416,5 +416,24 @@ std::shared_ptr<Value> While::exec(std::shared_ptr<Context> ctx) {
     cmpResult = compare->exec(ctx);
     // if (result->getType() == ValueType::T_CONTINUE) continue;
   }
+  return std::make_shared<Value>(ValueType::None);
+}
+
+std::shared_ptr<Value> Function::exec(std::shared_ptr<Context> ctx) {
+  auto funcPtr =
+      std::make_shared<FunctionPointer>(name, argumentNames, code.get());
+  ctx->setFunction(name, funcPtr);
+  return std::make_shared<Value>(ValueType::None);
+}
+
+std::shared_ptr<Value> FunctionPointer::exec(std::shared_ptr<Context> ctx) {
+  if (ctx->parametersSize() != argumentNames.size())
+    throw ParametersCountNotExpected(name, ctx->parametersSize(),
+                                     argumentNames.size());
+  for (int i = 0; i < ctx->parametersSize(); ++i)
+    ctx->setVariable(argumentNames[i], ctx->getParameter(i));
+
+  auto result = code->exec(ctx);
+  if (result->getType() == ValueType::T_RETURN) return result->getValuePtr();
   return std::make_shared<Value>(ValueType::None);
 }

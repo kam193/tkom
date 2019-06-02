@@ -249,14 +249,15 @@ BOOST_AUTO_TEST_CASE(test_code_block_return) {
   BOOST_TEST(MockInstruction::getExecutedCount() == 1);
 }
 
-BOOST_AUTO_TEST_CASE(test_code_block_declare_func) {
+BOOST_AUTO_TEST_CASE(test_declare_func) {
   auto ctx = empty_context();
   std::string name = "func_name";
-  auto func = std::make_unique<Function>(name);
+  auto code = std::make_unique<CodeBlock>();
+  code->addInstruction(mock_instr());
 
-  CodeBlock cb;
-  cb.addInstruction(std::move(func));
-  cb.exec(ctx);
+  Function func(name);
+  func.setCode(std::move(code));
+  func.exec(ctx);
 
   BOOST_TEST(ctx->getFunction(name) != nullptr);
 }
@@ -1054,6 +1055,46 @@ BOOST_AUTO_TEST_CASE(test_while_continue) {
 
   BOOST_TEST(MockInstruction::getExecutedCount() == 1);
   BOOST_TEST(ctx->getVariableValue(name)->getInt() == 2);
+}
+
+BOOST_AUTO_TEST_CASE(test_function_incorrect_params_throw) {
+  auto ctx = empty_context();
+  auto code = std::make_unique<CodeBlock>();
+  auto args_names = std::vector<std::string>{"arg1", "arg2"};
+
+  ctx->addParameter(get_value<int64_t>(1));
+  FunctionPointer func("name", args_names, code.get());
+
+  BOOST_CHECK_THROW(func.exec(ctx), ParametersCountNotExpected);
+}
+
+BOOST_AUTO_TEST_CASE(test_function_simple_call) {
+  auto ctx = empty_context();
+  auto code = std::make_unique<CodeBlock>();
+  code->addInstruction(mock_instr());
+
+  MockInstruction::resetExecutedCount();
+  FunctionPointer func("name", std::vector<std::string>(), code.get());
+  auto result = func.exec(ctx);
+
+  BOOST_TEST(MockInstruction::getExecutedCount() == 1);
+  BOOST_TEST((result->getType() == ValueType::None));
+}
+
+BOOST_AUTO_TEST_CASE(test_function_return_arg) {
+  auto ctx = empty_context();
+  std::string name = "arg1";
+  auto args_names = std::vector<std::string>{name};
+  auto return_instr = std::make_unique<Return>();
+  return_instr->setValue(std::make_unique<Variable>(name));
+  auto code = std::make_unique<CodeBlock>();
+  code->addInstruction(std::move(return_instr));
+
+  ctx->addParameter(get_value<std::string>("argument_test"));
+  FunctionPointer func("name", args_names, code.get());
+  auto result = func.exec(ctx);
+
+  BOOST_TEST(result->getStr() == "argument_test");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

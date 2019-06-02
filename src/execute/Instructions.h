@@ -76,6 +76,7 @@ class Function : public Instruction {
   TypeInstruction getInstructionType() override { return FunctionT; }
   std::string instrName() override { return name; }
   std::string toString() override;
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
  private:
   std::unique_ptr<CodeBlock> code = nullptr;
@@ -316,6 +317,19 @@ class While : public Instruction {
  private:
   std::unique_ptr<CompareExpr> compare;
   std::unique_ptr<CodeBlock> code;
+};
+
+class FunctionPointer : public Instruction {
+ public:
+  FunctionPointer(std::string name, std::vector<std::string> args,
+                  CodeBlock *code_ptr)
+      : name(name), argumentNames(args), code(code_ptr) {}
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
+
+ private:
+  CodeBlock *code;
+  std::vector<std::string> argumentNames;
+  std::string name;
 };
 
 #include "Context.h"

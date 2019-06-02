@@ -75,4 +75,14 @@ class TypesNotComparable : public ExecuteExceptionBase {
   }
 };
 
+class ParametersCountNotExpected : public ExecuteExceptionBase {
+ public:
+  ParametersCountNotExpected(std::string funcname, int given, int expected)
+      : ExecuteExceptionBase() {
+    message += "Function '" + funcname + "' expects " +
+               std::to_string(expected) + " arguments, but " +
+               std::to_string(given) + " given.";
+  }
+};
+
 #endif  // SRC_EXECUTE_EXECUTEEXCEPTIONS_H_
