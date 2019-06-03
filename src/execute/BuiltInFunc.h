@@ -13,7 +13,6 @@ class PrintFunction : public Instruction {
  public:
   explicit PrintFunction(std::ostream &out) : out(out) {}
 
-  TypeInstruction getInstructionType() override { return BuiltInFuncT; }
   std::string instrName() override { return "print"; }
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 

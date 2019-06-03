@@ -15,32 +15,9 @@
 #include "ExecuteExceptions.h"
 #include "Value.h"
 
-enum TypeInstruction {
-  GeneralT,
-  CodeBlockT,
-  FunctionT,
-  VariableT,
-  ConstantT,
-  SliceT,
-  FunctionCallT,
-  ReturnT,
-  CompareExprT,
-  ExpressionAddT,
-  ExpressionMulT,
-  ExpressionExpT,
-  AssignExprT,
-  ContinueT,
-  BreakT,
-  IfT,
-  ForT,
-  WhileT,
-  BuiltInFuncT
-};
-
 class Context;
 class Instruction {
  public:
-  virtual TypeInstruction getInstructionType() { return GeneralT; }
   virtual std::string toString() { return "Instruction"; }
   virtual std::string instrName() { return "__UNNAMED_INSTR"; }
   virtual std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) {
@@ -55,7 +32,6 @@ class CodeBlock : public Instruction {
   }
   bool empty() { return instructions.empty(); }
 
-  TypeInstruction getInstructionType() override { return CodeBlockT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -73,7 +49,6 @@ class Function : public Instruction {
 
   bool empty() { return code == nullptr || code->empty(); }
 
-  TypeInstruction getInstructionType() override { return FunctionT; }
   std::string instrName() override { return name; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
@@ -87,7 +62,6 @@ class Function : public Instruction {
 class Variable : public Instruction {
  public:
   explicit Variable(std::string name) : name(name) {}
-  TypeInstruction getInstructionType() override { return VariableT; }
   std::string toString() override { return name; }
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -107,7 +81,6 @@ class Constant : public Instruction {
   explicit Constant(std::vector<std::unique_ptr<Instruction>> &&elements)
       : type(ValueType::List), listElements(std::move(elements)) {}
 
-  TypeInstruction getInstructionType() override { return ConstantT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -130,7 +103,6 @@ class Slice : public Instruction {
 
   void setSource(std::unique_ptr<Instruction> src) { source = std::move(src); }
 
-  TypeInstruction getInstructionType() override { return SliceT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -148,7 +120,6 @@ class FunctionCall : public Instruction {
     args.push_back(std::move(arg));
   }
 
-  TypeInstruction getInstructionType() override { return FunctionCallT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -160,7 +131,6 @@ class FunctionCall : public Instruction {
 class Return : public Instruction {
  public:
   void setValue(std::unique_ptr<Instruction> val) { value = std::move(val); }
-  TypeInstruction getInstructionType() override { return ReturnT; }
   std::string toString() override { return "return " + value->toString(); }
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -174,7 +144,6 @@ class Expression : public Instruction {
 
   Expression() {}
 
-  TypeInstruction getInstructionType() override { return ExpressionAddT; }
   std::string toString() override;
 
   void setArgument(std::unique_ptr<Instruction> arg) {
@@ -218,7 +187,6 @@ class CompareExpr : public Instruction {
               std::unique_ptr<Expression> right)
       : type(type), leftExpr(std::move(left)), rightExpr(std::move(right)) {}
 
-  TypeInstruction getInstructionType() override { return CompareExprT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -248,7 +216,6 @@ class AssignExpr : public Instruction {
   AssignExpr(Type type, std::string name, std::unique_ptr<Expression> expr)
       : type(type), variableName(name), expression(std::move(expr)) {}
 
-  TypeInstruction getInstructionType() override { return AssignExprT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -260,7 +227,6 @@ class AssignExpr : public Instruction {
 
 class Continue : public Instruction {
  public:
-  TypeInstruction getInstructionType() override { return ContinueT; }
   std::string toString() override { return "continue"; }
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) {
     return std::make_shared<Value>(ValueType::T_CONTINUE);
@@ -269,7 +235,6 @@ class Continue : public Instruction {
 
 class Break : public Instruction {
  public:
-  TypeInstruction getInstructionType() override { return BreakT; }
   std::string toString() override { return "break"; }
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) {
     return std::make_shared<Value>(ValueType::T_BREAK);
@@ -281,7 +246,6 @@ class If : public Instruction {
   If(std::unique_ptr<CompareExpr> compare, std::unique_ptr<CodeBlock> ifCode)
       : compare(std::move(compare)), ifCode(std::move(ifCode)) {}
 
-  TypeInstruction getInstructionType() override { return IfT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -296,7 +260,6 @@ class For : public Instruction {
   For(std::string iterator, std::unique_ptr<Instruction> range,
       std::unique_ptr<CodeBlock> code)
       : iterator(iterator), range(std::move(range)), code(std::move(code)) {}
-  TypeInstruction getInstructionType() override { return ForT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 
@@ -310,7 +273,6 @@ class While : public Instruction {
  public:
   While(std::unique_ptr<CompareExpr> compare, std::unique_ptr<CodeBlock> code)
       : compare(std::move(compare)), code(std::move(code)) {}
-  TypeInstruction getInstructionType() override { return WhileT; }
   std::string toString() override;
   std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
 

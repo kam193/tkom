@@ -1,0 +1,5 @@
+Error on line 1 column 10: 
+	Invalid compare expression. Possible reasons:
+	 (-) no compare operator,
+	 (-) no right side of compare,
+	 (-) invalid token after expression: expected is ':' or new line.
