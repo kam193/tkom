@@ -1,0 +1,14 @@
+# list can contain any element
+l = [1, 2, "three", ["four", True]]
+print(l)
+
+# slice & len
+print(l[2:])
+print(len(l[3]))
+
+M = [1, 2] * 2
+print(M)
+print("a" * 3)
+L = [1, 2] + [3, 4]
+S2 = "aaaa" + "bbbb"
+print(L, S2)

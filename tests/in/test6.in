@@ -1,0 +1,6 @@
+def append(left, right):
+  return left + right
+
+print(append("aaaa", "bbbb"))
+print(append("This" + "is", "test"))
+print(append([1, 2, 3], [4, 5, "six"]))

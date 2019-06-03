@@ -1,0 +1,6 @@
+def plus_two(inp):
+  inp += 2
+  return inp
+
+print(plus_two(3))
+print(plus_two(15))

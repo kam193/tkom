@@ -1,0 +1,12 @@
+x = 20
+while x != 3:
+  if x == 15:
+    x -= 5
+  x -= 1
+  if x == 18:
+    continue
+  if x == 6:
+    break
+  print (x, "is still here")
+
+print ("x == ", x)

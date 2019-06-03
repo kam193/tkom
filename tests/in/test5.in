@@ -1,0 +1,16 @@
+def count_even(list):
+  def is_even(num):
+    while num > 1:
+      num -= 2
+    return num == 0
+  counter = 0
+  for e in list:
+    if is_even(e):
+      print(e, "is even")
+      counter += 1
+  return counter
+
+mstr = "Magic string"
+print (mstr, range(len(mstr)), count_even(range(len(mstr))))
+list = [2, 3, 7, 9, 0]
+print(list, count_even(list))

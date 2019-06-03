@@ -33,4 +33,16 @@ class RangeFunction : public Instruction {
   std::string name = "range";
 };
 
+class LenFunction : public Instruction {
+ public:
+  LenFunction() {}
+
+  std::string instrName() override { return name; }
+  std::shared_ptr<Value> exec(std::shared_ptr<Context> ctx) override;
+
+ private:
+  const int PARAMS_SIZE = 1;
+  std::string name = "len";
+};
+
 #endif  // SRC_EXECUTE_BUILTINFUNC_H_

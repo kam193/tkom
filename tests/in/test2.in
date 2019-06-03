@@ -1,0 +1,17 @@
+def plus_two(inp):
+  inp += 2
+  return inp
+
+for i in range(23):
+  print(plus_two(i))
+
+e = 23 * 7 + 5 ^ 4 - 3
+print(e)
+
+b = e - 2
+
+while b != e:
+  print(b)
+  b += 1
+
+print("To wielki dzien dla ludzkosci, ale maly dla pythona", i)

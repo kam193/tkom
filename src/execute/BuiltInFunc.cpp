@@ -26,3 +26,21 @@ std::shared_ptr<Value> RangeFunction::exec(std::shared_ptr<Context> ctx) {
 
   return std::make_shared<Value>(elements);
 }
+
+std::shared_ptr<Value> LenFunction::exec(std::shared_ptr<Context> ctx) {
+  if (ctx->parametersSize() != PARAMS_SIZE)
+    throw ParametersCountNotExpected(name, ctx->parametersSize(), PARAMS_SIZE);
+
+  auto input = ctx->getParameter(0);
+  if (input->getType() != ValueType::List &&
+      input->getType() != ValueType::Text)
+    throw TypeNotExpected("list, string");
+
+  int64_t size = 0;
+  if (input->getType() == ValueType::List)
+    size = input->getList().size();
+  else
+    size = input->getStr().size();
+
+  return std::make_shared<Value>(size);
+}

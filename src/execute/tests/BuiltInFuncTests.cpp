@@ -52,4 +52,47 @@ BOOST_AUTO_TEST_CASE(test_range_wrong_arg) {
   BOOST_CHECK_THROW(range.exec(ctx), TypeNotExpected);
 }
 
+BOOST_AUTO_TEST_CASE(test_len_str) {
+  auto val = std::make_shared<Value>(std::string{"123"});
+  auto ctx = std::make_shared<Context>();
+
+  LenFunction len;
+  ctx->addParameter(val);
+  auto result = len.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::Int));
+  BOOST_TEST(result->getInt() == 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_len_list) {
+  auto ctx = std::make_shared<Context>();
+  std::vector<std::shared_ptr<Value>> elements;
+  elements.push_back(std::make_shared<Value>(std::string{"123"}));
+  elements.push_back(std::make_shared<Value>(4L));
+  auto val = std::make_shared<Value>(elements);
+
+  LenFunction len;
+  ctx->addParameter(val);
+  auto result = len.exec(ctx);
+
+  BOOST_TEST((result->getType() == ValueType::Int));
+  BOOST_TEST(result->getInt() == 2);
+}
+
+BOOST_AUTO_TEST_CASE(test_len_no_arg) {
+  auto ctx = std::make_shared<Context>();
+
+  LenFunction len;
+  BOOST_CHECK_THROW(len.exec(ctx), ParametersCountNotExpected);
+}
+
+BOOST_AUTO_TEST_CASE(test_len_wrong_arg) {
+  auto val = std::make_shared<Value>(1L);
+  auto ctx = std::make_shared<Context>();
+
+  LenFunction len;
+  ctx->addParameter(val);
+  BOOST_CHECK_THROW(len.exec(ctx), TypeNotExpected);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

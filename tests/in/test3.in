@@ -1,0 +1,7 @@
+def plus_two(inp):
+  inp += 2
+  a = 3 * -4
+  return inp + a
+
+print(plus_two(3))
+print(plus_two(15))
