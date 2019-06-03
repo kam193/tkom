@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string>
 
-#include "execute/Program.h"
+#include "Program.h"
 
 int main() {
   // std::string program = "v3 = val[1]";

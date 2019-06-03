@@ -55,6 +55,7 @@ class Parser {
   std::unique_ptr<Instruction> tryParseArgument();
   std::unique_ptr<FunctionCall> tryParseFuncCall();
   std::unique_ptr<Constant> tryParseConstant();
+  std::unique_ptr<Constant> tryParseNumber();
   std::unique_ptr<Slice> tryParseSliceSt();
   std::unique_ptr<Instruction> tryParseSlicedValue();
   std::unique_ptr<Instruction> tryParseSlice();

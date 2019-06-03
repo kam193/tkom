@@ -8,8 +8,6 @@ void Program::run() {
 
   auto global = makeGlobalContext();
   auto result = code->exec(global);
-
-  out << "\nEXECUTING SUCCESSFULLY END.";
 }
 
 std::shared_ptr<Context> Program::makeGlobalContext() {

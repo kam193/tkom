@@ -1,4 +1,4 @@
-SOURCE_CODE=src/scanner/*.cpp src/parser/*.cpp src/execute/*.cpp
+SOURCE_CODE=src/scanner/*.cpp src/parser/*.cpp src/execute/*.cpp src/Program.cpp
 TEST_CODE=src/tests_main.cpp src/scanner/tests/*.cpp src/parser/tests/*.cpp src/execute/tests/*.cpp
 MAIN=src/main.cpp
 

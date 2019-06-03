@@ -61,6 +61,12 @@ BOOST_AUTO_TEST_CASE(test_expression_multiple_times) {
   assertExpectedCode(program);
 }
 
+BOOST_AUTO_TEST_CASE(test_expression_negative_numbers) {
+  std::string program = "var = -15 * -0x23 * -4.0 / -3";
+  std::string expected = "var = -15 * -35 * -4.000000 / -3";
+  assertExpectedCode(program, expected);
+}
+
 BOOST_AUTO_TEST_CASE(test_while_loop) {
   std::string program = "while i < 17:\n  func(i * 24)\n  i += 1\n  continue";
   assertExpectedCode(program);

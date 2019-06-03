@@ -122,8 +122,33 @@ std::unique_ptr<Instruction> Parser::tryParseArgument() {
   return nullptr;
 }
 
+std::unique_ptr<Constant> Parser::tryParseNumber() {
+  std::unique_ptr<Constant> number = nullptr;
+  bool negative = false;
+
+  if (checkTokenType(ttype::sub)) {
+    getNextToken();
+    negative = true;
+  }
+
+  if (checkTokenType(ttype::realNumber))
+    number = std::make_unique<Constant>(currentToken.getReal() *
+                                        (negative ? -1.0 : 1.0));
+  else if (checkTokenType(ttype::integerNumber))
+    number = std::make_unique<Constant>(currentToken.getInteger() *
+                                        (negative ? -1 : 1));
+
+  if (number == nullptr && negative) restoreToken();
+  if (number != nullptr) getNextToken();
+
+  return number;
+}
+
 std::unique_ptr<Constant> Parser::tryParseConstant() {
   std::unique_ptr<Constant> constPtr = nullptr;
+
+  constPtr = tryParseNumber();
+  if (constPtr != nullptr) return constPtr;
 
   if (checkTokenType(ttype::none))
     constPtr = std::make_unique<Constant>(ValueType::None);
@@ -131,10 +156,6 @@ std::unique_ptr<Constant> Parser::tryParseConstant() {
     constPtr = std::make_unique<Constant>(true);
   else if (checkTokenType(ttype::falseT))
     constPtr = std::make_unique<Constant>(false);
-  else if (checkTokenType(ttype::realNumber))
-    constPtr = std::make_unique<Constant>(currentToken.getReal());
-  else if (checkTokenType(ttype::integerNumber))
-    constPtr = std::make_unique<Constant>(currentToken.getInteger());
   else if (checkTokenType(ttype::stringT))
     constPtr = std::make_unique<Constant>(currentToken.getString());
 
